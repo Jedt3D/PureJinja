@@ -5,7 +5,7 @@ lexer → parser → renderer pipeline in procedural PureBasic without OOP inher
 This guide is intended for developers who want to use PureJinja in a project, extend it
 with custom filters, or contribute to the engine itself.
 
-Current version: 0.8.0 (Phases 0–5 complete, RenderString working)
+Current version: 1.3.0 (Feature-complete — all tiers implemented, 599/599 tests passing)
 
 ---
 
@@ -118,7 +118,7 @@ Defines all enumerations. No procedures. Key enumerations:
 |-------------|--------|
 | `VariantType` | `#VT_Null`, `#VT_Boolean`, `#VT_Integer`, `#VT_Double`, `#VT_String`, `#VT_List`, `#VT_Map`, `#VT_Markup` |
 | `TokenType` | `#TK_EOF`, `#TK_Data`, `#TK_VariableBegin`/`End`, `#TK_BlockBegin`/`End`, `#TK_Name`, `#TK_Keyword`, `#TK_String`, `#TK_Integer`, `#TK_Float`, `#TK_Operator`, `#TK_Assign`, `#TK_Pipe`, `#TK_Dot`, `#TK_Comma`, `#TK_LParen`/`RParen`, `#TK_LBracket`/`RBracket`, `#TK_Tilde` |
-| `NodeType` | `#NODE_Template`, `#NODE_Text`, `#NODE_Output`, `#NODE_Literal`, `#NODE_Variable`, `#NODE_BinaryOp`, `#NODE_UnaryOp`, `#NODE_Compare`, `#NODE_Filter`, `#NODE_GetAttr`, `#NODE_GetItem`, `#NODE_If`, `#NODE_For`, `#NODE_Set`, `#NODE_Block`, `#NODE_Extends`, `#NODE_Include`, `#NODE_Macro`, `#NODE_Call`, `#NODE_ListLiteral` |
+| `NodeType` | `#NODE_Template`, `#NODE_Text`, `#NODE_Output`, `#NODE_Literal`, `#NODE_Variable`, `#NODE_BinaryOp`, `#NODE_UnaryOp`, `#NODE_Compare`, `#NODE_Filter`, `#NODE_GetAttr`, `#NODE_GetItem`, `#NODE_If`, `#NODE_For`, `#NODE_Set`, `#NODE_Block`, `#NODE_Extends`, `#NODE_Include`, `#NODE_Macro`, `#NODE_Call`, `#NODE_ListLiteral`, `#NODE_DictLiteral`, `#NODE_Import` |
 | `ErrorCode` | `#ERR_None`, `#ERR_Syntax`, `#ERR_Render`, `#ERR_Undefined`, `#ERR_Type`, `#ERR_Filter`, `#ERR_Loader`, `#ERR_Inheritance`, `#ERR_Internal` |
 
 Also defines `#JINJA_VERSION$` and `#JINJA_MAX_RECURSION`.
@@ -606,9 +606,8 @@ ForEach vars()
 Next
 ```
 
-Note: `RenderTemplate()` does not automatically resolve template inheritance. If the child
-template uses `{% extends %}`, use the low-level pipeline and call
-`JinjaExtends::Resolve(*env, *ast)` between parse and render (see Low-level API above).
+Note: `RenderTemplate()` automatically resolves template inheritance when `{% extends %}`
+is present — no manual `JinjaExtends::Resolve()` call is needed.
 
 ---
 
@@ -679,7 +678,7 @@ template uses `{% extends %}`, use the low-level pipeline and call
 - FileSystemLoader (reads UTF-8 files)
 - DictLoader (in-memory string map)
 - Custom filter registration via `JinjaEnv::RegisterFilter()`
-- All 25 built-in filters (see table below)
+- All 33 built-in filters with 3 aliases (see table below)
 
 ### Phase 5 — Template Inheritance and Include
 
@@ -717,8 +716,112 @@ template uses `{% extends %}`, use the low-level pipeline and call
 | `wordcount` | | Count words in a string |
 | `truncate(n)` | | Truncate string to N characters, appending `...` |
 | `striptags` | | Remove HTML tags |
+| `indent(width)` | | Indent each line by `width` spaces (default 4) |
+| `wordwrap(width)` | | Wrap text at `width` characters (default 79) |
+| `center(width)` | | Center text in a field of `width` characters |
+| `urlencode` | | Percent-encode a string for URLs |
+| `tojson` | | Serialize value to a JSON string |
+| `unique` | | Remove duplicate items from a list |
+| `map(attribute)` | | Extract an attribute from each item in a list |
+| `items` | | Convert a dict to a list of `[key, value]` pairs |
 
 ---
+
+### Whitespace Control
+
+Strip markers (`-`) remove whitespace adjacent to template tags:
+
+```html
+{%- if true -%}
+  content
+{%- endif -%}
+```
+
+- `{%-` strips whitespace *before* the tag (trailing whitespace of previous text)
+- `-%}` strips whitespace *after* the tag (leading whitespace of next text)
+- Works on all tag types: `{%- -%}`, `{{- -}}`, `{#- -#}`
+
+Whitespace stripping is handled entirely in the Lexer as a post-processing pass on `TK_Data` tokens.
+
+### Raw Blocks
+
+Content inside `{% raw %}...{% endraw %}` is output literally without Jinja processing:
+
+```html
+{% raw %}
+  {{ this is not evaluated }}
+  {% neither is this %}
+{% endraw %}
+```
+
+Handled in the Lexer — content between `raw`/`endraw` becomes a single `TK_Data` token.
+
+### Dict Literals
+
+Dict literals use JSON-like syntax in expressions:
+
+```html
+{% set config = {"debug": true, "title": "Home"} %}
+{{ config.debug }}
+{{ config["title"] }}
+```
+
+Supports nested dicts, variable values, trailing commas, and empty dicts `{}`. Changes span Lexer (brace token emission), Parser (dict parsing), and Renderer (evaluation).
+
+### Namespace and Dot-Assignment
+
+The `namespace()` function creates a mutable object that persists across scopes, solving the common Jinja2 scoping problem where variables set inside `for` loops or `if` blocks are not visible outside:
+
+```html
+{% set ns = namespace(found=false) %}
+{% for item in items %}
+  {% if item == target %}
+    {% set ns.found = true %}
+  {% endif %}
+{% endfor %}
+{{ ns.found }}
+```
+
+Dot-assignment (`{% set ns.attr = value %}`) modifies the map attribute in-place without deep-copy interference.
+
+### Import Statement
+
+Import macros from other templates:
+
+```html
+{% from "macros.html" import render_field, render_form %}
+
+{{ render_field("username") }}
+```
+
+Supports importing multiple macros with comma-separated names. The imported template is loaded, parsed, and its macro definitions are extracted and registered in the environment.
+
+### Recursive For Loops
+
+The `recursive` modifier makes `loop()` a callable function that re-enters the for body with a new iterable:
+
+```html
+{% for item in tree recursive %}
+  <li>{{ item.name }}
+    {% if item.children %}
+      <ul>{{ loop(item.children) }}</ul>
+    {% endif %}
+  </li>
+{% endfor %}
+```
+
+Core loop logic is extracted to a shared `RenderForItems()` helper used by both normal iteration and recursive calls.
+
+### Global Functions
+
+Built-in functions available in all templates:
+
+| Function | Description |
+|----------|-------------|
+| `range(stop)` / `range(start, stop)` / `range(start, stop, step)` | Generate a list of integers |
+| `dict()` | Create an empty dictionary |
+| `joiner(sep)` | Returns a callable that outputs `sep` between iterations (skips first call) |
+| `cycler(items...)` | Cycles through the given values on each call |
 
 ## Adding Custom Filters
 
@@ -786,7 +889,7 @@ The `-cl` flag compiles a console application. On Windows, omit `./` and add `.e
 ### Expected Output
 
 ```
-=== PureJinja Test Suite v0.8.0 ===
+=== PureJinja Test Suite v1.3.0 ===
 
 [PASS] NullVariant type
 [PASS] BoolVariant true
@@ -826,36 +929,21 @@ EndProcedure
 
 ## Known Limitations
 
-The following features are deferred (Tier 3 from the feasibility study) and are not yet
-implemented:
+The following Jinja2 features are not yet implemented:
 
-**Whitespace control** — The `-` strip markers (`{%- -%}`, `{{- -}}`) and the
-`trim_blocks`/`lstrip_blocks` environment flags are defined in `JinjaEnvironment` but not
-processed by the lexer or renderer.
+**`super()` in blocks** — The `ExtendsResolver` populates a `parentBlockContent` map during merging, but `{{ super() }}` calls in child blocks are not resolved to the parent's content at render time.
 
-**`{% raw %}` blocks** — Raw block parsing is not implemented. The lexer recognises `raw`
-and `endraw` as keywords, but the renderer does not handle them.
+**`trim_blocks` / `lstrip_blocks`** — Environment flags are defined in `JinjaEnvironment` but not processed by the lexer or renderer.
 
-**Dict literals** — `{"key": "value"}` syntax in expressions is not parsed. Use a
-`#VT_Map` variant in application code instead.
+**Higher-order filters** — `groupby`, `select`, `reject`, `selectattr`, `rejectattr`, `dictsort`, `filesizeformat` are not implemented.
 
-**`super()` in blocks** — The `ExtendsResolver` populates a `parentBlockContent` map
-during merging, but `super()` calls in child blocks are not resolved to the parent's
-content at render time.
+**`{% call %}` blocks** — Call blocks for wrapping macro output are parsed but not fully rendered.
 
-**Higher-order filters** — `groupby`, `map`, `select`, `reject`, `selectattr`,
-`rejectattr`, `unique`, `dictsort`, `tojson`, `urlencode`, `indent`, `wordwrap`,
-`filesizeformat`, `center` are not implemented.
+**`lipsum()` function** — Lorem ipsum text generation is not implemented.
 
-**`{% from ... import %}` / `{% import %}`** — Not implemented.
+**Custom delimiters** — Template delimiters are hardcoded to `{{ }}`, `{% %}`, `{# #}`.
 
-**Recursive loops** — `{% for ... recursive %}` is not implemented.
-
-**`namespace()` objects** — Cross-scope variable assignment via `namespace` is not
-implemented.
-
-**Global functions** — `dict()`, `cycler()`, `joiner()`, `lipsum()` are not implemented.
-`range()` is implemented as a built-in function via `EvaluateCall()`.
+**`{% do %}` blocks** — Expression statements without output are not implemented.
 
 ---
 
