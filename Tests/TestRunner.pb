@@ -66,6 +66,8 @@ XIncludeFile "TestDict.pbi"
 XIncludeFile "TestNewFilters.pbi"
 XIncludeFile "TestNamespace.pbi"
 XIncludeFile "TestGlobalFuncs.pbi"
+XIncludeFile "TestImport.pbi"
+XIncludeFile "TestRecursive.pbi"
 
 ; --- Main ---
 OpenConsole()
@@ -87,6 +89,8 @@ RunDictTests()
 RunNewFilterTests()
 RunNamespaceTests()
 RunGlobalFuncTests()
+RunImportTests()
+RunRecursiveTests()
 
 PrintN("=== Results ===")
 PrintN("Passed: " + Str(gTestsPassed) + "/" + Str(gTestsTotal))

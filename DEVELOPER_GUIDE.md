@@ -927,3 +927,18 @@ Total: 563/563 tests passing, 9,689 lines compiled, 30 source files.
    joiner/cycler use global state maps to track call history.
 
 Total: 586/586 tests passing, 10,100 lines compiled, 32 source files.
+
+**v1.3** — Import statement and recursive for loops (Tier 3 complete):
+
+1. **`{% from "template" import macro_name %}`**: Loads a template, extracts named
+   macro definitions, and registers them in the environment. Supports importing
+   multiple macros with comma-separated names. Lexer recognizes "from" and "import"
+   as keywords.
+
+2. **Recursive for loops**: `{% for item in tree recursive %}` makes `loop()` a
+   callable function that re-renders the for body with a new iterable. Enables
+   rendering tree/nested data structures. Core loop logic extracted to
+   `RenderForItems()` helper shared by both normal iteration and recursive calls.
+
+This completes all Tier 3 features from the feasibility study.
+Total: 599/599 tests passing, 10,653 lines compiled, 33 source files.

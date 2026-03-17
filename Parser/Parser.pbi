@@ -283,10 +283,18 @@ Module JinjaParser
     Protected *iterable.JinjaAST::ASTNode = ParseExpression()
     If JinjaError::HasError() : ProcedureReturn #Null : EndIf
 
+    ; Check for optional 'recursive' modifier before %}
+    Protected isRecursive.i = #False
+    If CurrentType() = Jinja::#TK_Keyword And LCase(CurrentValue()) = "recursive"
+      isRecursive = #True
+      Advance()
+    EndIf
+
     Expect(Jinja::#TK_BlockEnd)
     If JinjaError::HasError() : ProcedureReturn #Null : EndIf
 
     Protected *forNode.JinjaAST::ASTNode = JinjaAST::NewForNode(varName, *iterable, lineNum)
+    *forNode\IntVal = isRecursive  ; 1 = recursive, 0 = normal
 
     ; Parse body
     While Not IsAtEnd() And Not IsBlockKeyword("else") And Not IsBlockKeyword("endfor")
@@ -516,6 +524,41 @@ Module JinjaParser
     ProcedureReturn *macroNode
   EndProcedure
 
+  Procedure.i ParseImportStatement()
+    Protected lineNum.i = CurrentLine()
+    Advance() ; skip 'from'
+
+    ; Expect template name string
+    If CurrentType() <> Jinja::#TK_String
+      JinjaError::SetError(Jinja::#ERR_Syntax, "Expected template name (string) after 'from'", CurrentLine())
+      ProcedureReturn #Null
+    EndIf
+    Protected templateName.s = CurrentValue()
+    Advance()
+
+    ; Expect 'import' keyword
+    ExpectKeyword("import")
+    If JinjaError::HasError() : ProcedureReturn #Null : EndIf
+
+    ; Create import node (StringVal = template name)
+    Protected *node.JinjaAST::ASTNode = JinjaAST::NewImportNode(templateName, lineNum)
+
+    ; Read comma-separated macro names
+    While CurrentType() = Jinja::#TK_Name
+      Protected *nameNode.JinjaAST::ASTNode = JinjaAST::NewVariableNode(CurrentValue(), CurrentLine())
+      JinjaAST::AddArg(*node, *nameNode)
+      Advance()
+      If CurrentType() = Jinja::#TK_Comma
+        Advance()
+      EndIf
+    Wend
+
+    Expect(Jinja::#TK_BlockEnd)
+    If JinjaError::HasError() : ProcedureReturn *node : EndIf
+
+    ProcedureReturn *node
+  EndProcedure
+
   Procedure.i ParseCallStatement()
     Advance() ; skip 'call'
 
@@ -588,6 +631,8 @@ Module JinjaParser
           ProcedureReturn ParseMacroStatement()
         Case "call"
           ProcedureReturn ParseCallStatement()
+        Case "from"
+          ProcedureReturn ParseImportStatement()
         Default
           SkipToBlockEnd()
           ProcedureReturn #Null

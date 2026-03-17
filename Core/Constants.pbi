@@ -74,6 +74,7 @@ DeclareModule Jinja
     #NODE_Call             ; Macro/function call
     #NODE_ListLiteral      ; List literal [a, b, c]
     #NODE_DictLiteral      ; Dict literal {"key": value}
+    #NODE_Import           ; {% from "template" import macro_name %}
   EndEnumeration
 
   ; --- Literal Sub-Types ---
@@ -100,7 +101,7 @@ DeclareModule Jinja
   EndEnumeration
 
   ; --- Engine Constants ---
-  #JINJA_VERSION$ = "1.2.0"
+  #JINJA_VERSION$ = "1.3.0"
   #JINJA_MAX_RECURSION = 100
 
 EndDeclareModule

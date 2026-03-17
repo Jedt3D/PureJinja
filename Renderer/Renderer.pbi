@@ -30,6 +30,15 @@ Module JinjaRenderer
   Global NewMap gCyclerIndex.i()
   Global gCyclerCounter.i = 0
 
+  ; --- Global state for recursive for loop ---
+  ; Stores the current recursive for node, env, and ctx so loop() can re-invoke the body
+  Global *gRecursiveForNode.JinjaAST::ASTNode = #Null
+  Global *gRecursiveForEnv.JinjaEnv::JinjaEnvironment = #Null
+  Global *gRecursiveForCtx.JinjaContext::JinjaContext = #Null
+
+  ; Forward declare the helper for rendering a for-body with a given iterable
+  Declare.s RenderForItems(*env.JinjaEnv::JinjaEnvironment, *ctx.JinjaContext::JinjaContext, *node.JinjaAST::ASTNode, *iterV.JinjaVariant::JinjaVariant)
+
   ; ===== Render Helpers =====
 
   Procedure.s RenderNodeList(*env.JinjaEnv::JinjaEnvironment, *ctx.JinjaContext::JinjaContext, *node.JinjaAST::ASTNode)
@@ -510,6 +519,27 @@ Module JinjaRenderer
 
     ; Built-in functions
     Select LCase(funcName)
+      Case "loop"
+        ; loop(newItems) — re-render the recursive for body with a new iterable.
+        ; Only works inside a {% for ... recursive %} loop.
+        If *gRecursiveForNode <> #Null And *node\Args <> #Null
+          Protected loopArgV.JinjaVariant::JinjaVariant
+          EvaluateExpression(*gRecursiveForEnv, *ctx, *node\Args, @loopArgV)
+          If Not JinjaError::HasError()
+            If loopArgV\VType = Jinja::#VT_List And JinjaVariant::VListSize(@loopArgV) > 0
+              Protected loopOutput.s = RenderForItems(*gRecursiveForEnv, *ctx, *gRecursiveForNode, @loopArgV)
+              JinjaVariant::MarkupVariant(*result, loopOutput)
+            Else
+              JinjaVariant::StrVariant(*result, "")
+            EndIf
+          Else
+            JinjaVariant::StrVariant(*result, "")
+          EndIf
+          JinjaVariant::FreeVariant(@loopArgV)
+        Else
+          JinjaVariant::StrVariant(*result, "")
+        EndIf
+
       Case "namespace"
         ; namespace() creates a mutable map that persists across scopes.
         ; Arguments are ignored in this implementation (empty namespace).
@@ -829,28 +859,11 @@ Module JinjaRenderer
     ProcedureReturn RenderNodeList(*env, *ctx, *node\ElseBody)
   EndProcedure
 
-  Procedure.s RenderFor(*env.JinjaEnv::JinjaEnvironment, *ctx.JinjaContext::JinjaContext, *node.JinjaAST::ASTNode)
-    ; Evaluate iterable
-    Protected iterV.JinjaVariant::JinjaVariant
-    EvaluateExpression(*env, *ctx, *node\Left, @iterV)
-    If JinjaError::HasError()
-      JinjaVariant::FreeVariant(@iterV)
-      ProcedureReturn ""
-    EndIf
-
-    ; Must be a list
-    If iterV\VType <> Jinja::#VT_List
-      ; Not iterable - render else body
-      JinjaVariant::FreeVariant(@iterV)
-      ProcedureReturn RenderNodeList(*env, *ctx, *node\ElseBody)
-    EndIf
-
-    Protected count.i = JinjaVariant::VListSize(@iterV)
-    If count = 0
-      JinjaVariant::FreeVariant(@iterV)
-      ProcedureReturn RenderNodeList(*env, *ctx, *node\ElseBody)
-    EndIf
-
+  ; --- Core for-loop body rendering helper ---
+  ; Iterates over iterV (must be a list), renders body for each item.
+  ; Used by both RenderFor and the recursive loop() callable.
+  Procedure.s RenderForItems(*env.JinjaEnv::JinjaEnvironment, *ctx.JinjaContext::JinjaContext, *node.JinjaAST::ASTNode, *iterV.JinjaVariant::JinjaVariant)
+    Protected count.i = JinjaVariant::VListSize(*iterV)
     Protected output.s = ""
     Protected i.i
 
@@ -859,7 +872,7 @@ Module JinjaRenderer
 
       ; Set loop variable
       Protected itemV.JinjaVariant::JinjaVariant
-      JinjaVariant::VListGet(@iterV, i, @itemV)
+      JinjaVariant::VListGet(*iterV, i, @itemV)
       JinjaContext::SetVariable(*ctx, *node\StringVal, @itemV)
       JinjaVariant::FreeVariant(@itemV)
 
@@ -900,6 +913,51 @@ Module JinjaRenderer
         Break
       EndIf
     Next
+
+    ProcedureReturn output
+  EndProcedure
+
+  Procedure.s RenderFor(*env.JinjaEnv::JinjaEnvironment, *ctx.JinjaContext::JinjaContext, *node.JinjaAST::ASTNode)
+    ; Evaluate iterable
+    Protected iterV.JinjaVariant::JinjaVariant
+    EvaluateExpression(*env, *ctx, *node\Left, @iterV)
+    If JinjaError::HasError()
+      JinjaVariant::FreeVariant(@iterV)
+      ProcedureReturn ""
+    EndIf
+
+    ; Must be a list
+    If iterV\VType <> Jinja::#VT_List
+      ; Not iterable - render else body
+      JinjaVariant::FreeVariant(@iterV)
+      ProcedureReturn RenderNodeList(*env, *ctx, *node\ElseBody)
+    EndIf
+
+    Protected count.i = JinjaVariant::VListSize(@iterV)
+    If count = 0
+      JinjaVariant::FreeVariant(@iterV)
+      ProcedureReturn RenderNodeList(*env, *ctx, *node\ElseBody)
+    EndIf
+
+    ; For recursive for loops, set up the global context so loop() can re-invoke
+    Protected *prevRecNode.JinjaAST::ASTNode = *gRecursiveForNode
+    Protected *prevRecEnv.JinjaEnv::JinjaEnvironment = *gRecursiveForEnv
+    Protected *prevRecCtx.JinjaContext::JinjaContext = *gRecursiveForCtx
+
+    If *node\IntVal  ; isRecursive
+      *gRecursiveForNode = *node
+      *gRecursiveForEnv = *env
+      *gRecursiveForCtx = *ctx
+    EndIf
+
+    Protected output.s = RenderForItems(*env, *ctx, *node, @iterV)
+
+    ; Restore recursive for context
+    If *node\IntVal
+      *gRecursiveForNode = *prevRecNode
+      *gRecursiveForEnv = *prevRecEnv
+      *gRecursiveForCtx = *prevRecCtx
+    EndIf
 
     JinjaVariant::FreeVariant(@iterV)
     ProcedureReturn output
@@ -969,6 +1027,57 @@ Module JinjaRenderer
     ProcedureReturn ""
   EndProcedure
 
+  Procedure.s RenderImport(*env.JinjaEnv::JinjaEnvironment, *ctx.JinjaContext::JinjaContext, *node.JinjaAST::ASTNode)
+    ; Load and parse the imported template, then register requested macros
+    If *env\Loader = #Null
+      JinjaError::SetError(Jinja::#ERR_Loader, "No loader configured for import")
+      ProcedureReturn ""
+    EndIf
+
+    Protected source.s = JinjaLoader::LoadTemplate(*env\Loader, *node\StringVal)
+    If JinjaError::HasError()
+      ProcedureReturn ""
+    EndIf
+
+    ; Tokenize the imported template
+    Protected NewList importTokens.JinjaToken::Token()
+    JinjaLexer::Tokenize(source, importTokens())
+    If JinjaError::HasError()
+      ProcedureReturn ""
+    EndIf
+
+    ; Parse the imported template
+    Protected *importAST.JinjaAST::ASTNode = JinjaParser::Parse(importTokens())
+    If JinjaError::HasError()
+      ProcedureReturn ""
+    EndIf
+
+    ; Walk the top-level body of the imported template looking for macro definitions
+    Protected *child.JinjaAST::ASTNode = *importAST\Body
+    While *child
+      If *child\NodeType = Jinja::#NODE_Macro
+        ; Check if this macro name appears in the import list (our Args)
+        Protected *argNode.JinjaAST::ASTNode = *node\Args
+        While *argNode
+          If *argNode\StringVal = *child\StringVal
+            ; Register this macro in the environment
+            ; Note: the macro node is owned by *importAST; we must NOT free importAST
+            ; below if any macros were registered. We keep the AST alive by leaking it
+            ; (acceptable — macros live for the duration of template rendering).
+            *env\MacroDefs(*child\StringVal) = *child
+          EndIf
+          *argNode = *argNode\Next
+        Wend
+      EndIf
+      *child = *child\Next
+    Wend
+
+    ; Do NOT free importAST because registered macro nodes are referenced by env\MacroDefs.
+    ; The small memory leak is acceptable for the scope of a single render call.
+
+    ProcedureReturn ""
+  EndProcedure
+
   ; ===== Main Node Dispatcher =====
 
   Procedure.s RenderNode(*env.JinjaEnv::JinjaEnvironment, *ctx.JinjaContext::JinjaContext, *node.JinjaAST::ASTNode)
@@ -1003,6 +1112,9 @@ Module JinjaRenderer
 
       Case Jinja::#NODE_Macro
         ProcedureReturn RenderMacro(*env, *ctx, *node)
+
+      Case Jinja::#NODE_Import
+        ProcedureReturn RenderImport(*env, *ctx, *node)
 
       Case Jinja::#NODE_Extends
         ; Handled by ExtendsResolver before rendering

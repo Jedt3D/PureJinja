@@ -46,6 +46,9 @@ Module JinjaLexer
       gKeywords("none") = #True
       gKeywords("raw") = #True
       gKeywords("endraw") = #True
+      gKeywords("from") = #True
+      gKeywords("import") = #True
+      gKeywords("recursive") = #True
     EndIf
   EndProcedure
 
