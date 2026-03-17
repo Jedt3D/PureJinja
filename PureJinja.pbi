@@ -34,3 +34,5 @@ XIncludeFile "Renderer/Renderer.pbi"
 
 ; --- Inheritance ---
 XIncludeFile "Inheritance/ExtendsResolver.pbi"
+
+; --- Renderer auto-registers with Environment via callback (see Renderer.pbi) ---

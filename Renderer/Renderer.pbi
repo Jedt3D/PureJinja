@@ -877,4 +877,7 @@ Module JinjaRenderer
     ProcedureReturn RenderNode(*env, *ctx, *ast)
   EndProcedure
 
+  ; --- Auto-register with Environment (resolves circular dependency) ---
+  JinjaEnv::RegisterRenderer(@Render())
+
 EndModule

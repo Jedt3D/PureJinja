@@ -342,5 +342,26 @@ Procedure RunIntegrationTests()
   AssertEqual(Integration_RenderRaw("{# This is a comment #}Hello", cmtVars()), "Hello", "Integration: comment is stripped")
   AssertEqual(Integration_RenderRaw("Before{# comment #}After", cmtVars()), "BeforeAfter", "Integration: inline comment stripped")
 
+  ; =========================================================
+  ; Test 17: JinjaEnv::RenderString public API (end-to-end)
+  ; =========================================================
+  Protected *apiEnv.JinjaEnv::JinjaEnvironment = JinjaEnv::CreateEnvironment()
+  *apiEnv\Autoescape = #False
+  Protected NewMap apiVars.JinjaVariant::JinjaVariant()
+  JinjaVariant::StrVariant(@tmpV, "PureBasic")
+  apiVars("lang") = tmpV
+  AssertEqual(JinjaEnv::RenderString(*apiEnv, "Hello {{ lang }}!", apiVars()), "Hello PureBasic!", "Integration: JinjaEnv::RenderString API works")
+
+  ; Test with filter
+  AssertEqual(JinjaEnv::RenderString(*apiEnv, "{{ lang|upper }}", apiVars()), "PUREBASIC", "Integration: RenderString with filter")
+
+  ; Test with autoescape
+  *apiEnv\Autoescape = #True
+  JinjaVariant::StrVariant(@tmpV, "<b>bold</b>")
+  apiVars("html") = tmpV
+  AssertEqual(JinjaEnv::RenderString(*apiEnv, "{{ html }}", apiVars()), "&lt;b&gt;bold&lt;/b&gt;", "Integration: RenderString with autoescape")
+
+  JinjaEnv::FreeEnvironment(*apiEnv)
+
   PrintN("")
 EndProcedure

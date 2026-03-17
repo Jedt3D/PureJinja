@@ -10,6 +10,10 @@ DeclareModule JinjaEnv
   ; All filters: procedure(*value.JinjaVariant, *args.JinjaVariant, argCount.i, *result.JinjaVariant)
   Prototype ProtoFilter(*value.JinjaVariant::JinjaVariant, *args.JinjaVariant::JinjaVariant, argCount.i, *result.JinjaVariant::JinjaVariant)
 
+  ; --- Renderer callback prototype ---
+  ; Called by RenderString/RenderTemplate to invoke the Renderer module
+  Prototype.s ProtoRenderCallback(*env, *ast.JinjaAST::ASTNode, Map variables.JinjaVariant::JinjaVariant())
+
   ; --- Environment Structure ---
   Structure JinjaEnvironment
     Autoescape.i                       ; #True to auto-escape HTML output
@@ -30,6 +34,9 @@ DeclareModule JinjaEnv
   Declare SetLoader(*env.JinjaEnvironment, *loader.JinjaLoader::TemplateLoader)
   Declare SetTemplatePath(*env.JinjaEnvironment, path.s)
 
+  ; --- Renderer Registration (called by Renderer.pbi on load) ---
+  Declare RegisterRenderer(*renderProc)
+
   ; --- Template Operations ---
   Declare.s RenderString(*env.JinjaEnvironment, templateStr.s, Map variables.JinjaVariant::JinjaVariant())
   Declare.s RenderTemplate(*env.JinjaEnvironment, templateName.s, Map variables.JinjaVariant::JinjaVariant())
@@ -38,6 +45,13 @@ DeclareModule JinjaEnv
 EndDeclareModule
 
 Module JinjaEnv
+
+  ; --- Runtime callback for Renderer (set by RegisterRenderer) ---
+  Global gRenderCallback.i = #Null
+
+  Procedure RegisterRenderer(*renderProc)
+    gRenderCallback = *renderProc
+  EndProcedure
 
   Procedure.i CreateEnvironment()
     Protected *env.JinjaEnvironment = AllocateStructure(JinjaEnvironment)
@@ -108,11 +122,12 @@ Module JinjaEnv
     ProcedureReturn ""
   EndProcedure
 
-  ; Forward declare - these are implemented in Renderer.pbi
-  ; The actual RenderString and RenderTemplate use the Renderer module
-
   Procedure.s RenderString(*env.JinjaEnvironment, templateStr.s, Map variables.JinjaVariant::JinjaVariant())
-    ; This is a convenience wrapper - actual rendering done by JinjaRenderer
+    If gRenderCallback = #Null
+      JinjaError::SetError(Jinja::#ERR_Internal, "Renderer not registered")
+      ProcedureReturn "[Error] " + JinjaError::FormatError()
+    EndIf
+
     ; Tokenize
     Protected NewList tokens.JinjaToken::Token()
     JinjaError::ClearError()
@@ -127,12 +142,10 @@ Module JinjaEnv
       ProcedureReturn "[Error] " + JinjaError::FormatError()
     EndIf
 
-    ; Render (done by Renderer module - forward reference resolved at link time)
-    ; We'll call into JinjaRenderer module
-    Protected result.s = ""
-    ; The actual call will be: JinjaRenderer::Render(*env, *ast, variables())
-    ; But we need to handle circular dependency - Renderer includes after Environment
-    ; So we store info and let the main entry point handle it
+    ; Render via callback to JinjaRenderer::Render
+    Protected renderProc.ProtoRenderCallback = gRenderCallback
+    Protected result.s = renderProc(*env, *ast, variables())
+    JinjaAST::FreeAST(*ast)
     ProcedureReturn result
   EndProcedure
 
