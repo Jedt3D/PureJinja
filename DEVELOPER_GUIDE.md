@@ -5,7 +5,7 @@ lexer → parser → renderer pipeline in procedural PureBasic without OOP inher
 This guide is intended for developers who want to use PureJinja in a project, extend it
 with custom filters, or contribute to the engine itself.
 
-Current version: 0.1.0 (Phases 0–5 complete)
+Current version: 0.8.0 (Phases 0–5 complete, RenderString working)
 
 ---
 
@@ -92,6 +92,17 @@ inheritance. Data is passed as pointers to allocated structures.
 `ProtoFilter(*value, *args, argCount, *result)`. The environment stores a `Map` of
 filter name → procedure address. Filters are called via the prototype without knowing
 the callee at compile time. Custom filters use the same prototype.
+
+**Environment/Renderer circular dependency resolution** — `Environment.pbi` must be
+compiled before `Renderer.pbi` (it declares the `JinjaEnvironment` structure that the
+renderer needs), yet `RenderString()` in the environment needs to call
+`JinjaRenderer::Render()`. This would create a circular include. The solution is a
+runtime callback: `Environment.pbi` declares a `ProtoRenderCallback` prototype and stores
+a global `gRenderCallback` pointer. At the bottom of `Renderer.pbi`, after the `Module`
+block closes, a single module-level statement calls `JinjaEnv::RegisterRenderer(@Render())`
+to install the callback. `PureJinja.pbi` includes `Environment.pbi` first and
+`Renderer.pbi` second, so the callback is set before any user code runs. `RenderString()`
+and `RenderTemplate()` invoke the renderer through this pointer.
 
 ---
 
@@ -397,13 +408,8 @@ EndStructure
 | `HasFilter(*env, name)` | Returns `#True` if filter is registered |
 | `SetLoader(*env, *loader)` | Attach a loader (frees old one if present) |
 | `SetTemplatePath(*env, path)` | Shortcut: creates a FileSystemLoader at `path` |
-| `RenderString(*env, templateStr, Map variables())` | Render a template string |
-| `RenderTemplate(*env, templateName, Map variables())` | Load and render by name |
-
-Note: `RenderString()` in the current implementation does tokenize and parse but returns
-an empty string because the full render call to `JinjaRenderer` is not yet wired through
-`Environment.pbi`. Call `JinjaRenderer::Render()` directly from application code (see
-Quick Start below).
+| `RenderString(*env, templateStr, Map variables())` | Tokenize, parse, and render a template string; returns the rendered output or `"[Error] ..."` on failure |
+| `RenderTemplate(*env, templateName, Map variables())` | Load a template by name via the configured loader, then call `RenderString()` |
 
 ---
 
@@ -443,45 +449,62 @@ All modules are auto-included in dependency order. No further includes are neede
 
 ### Rendering a Template from a String
 
+`JinjaEnv::RenderString()` is the recommended API. It handles tokenizing, parsing, and
+rendering internally, and returns the rendered string (or `"[Error] ..."` on failure).
+
 ```purebasic
 EnableExplicit
 XIncludeFile "../PureJinja.pbi"
 
-Procedure.s RenderFromString(templateStr.s, Map vars.JinjaVariant::JinjaVariant())
-  Protected *env.JinjaEnv::JinjaEnvironment = JinjaEnv::CreateEnvironment()
-  JinjaError::ClearError()
+Protected *env.JinjaEnv::JinjaEnvironment = JinjaEnv::CreateEnvironment()
 
-  Protected NewList tokens.JinjaToken::Token()
-  JinjaLexer::Tokenize(templateStr, tokens())
-
-  Protected *ast.JinjaAST::ASTNode = JinjaParser::Parse(tokens())
-  Protected result.s = JinjaRenderer::Render(*env, *ast, vars())
-
-  If JinjaError::HasError()
-    result = "[Error] " + JinjaError::FormatError()
-    JinjaError::ClearError()
-  EndIf
-
-  JinjaAST::FreeAST(*ast)
-  JinjaEnv::FreeEnvironment(*env)
-  ProcedureReturn result
-EndProcedure
-
-; --- Build variables ---
 Protected NewMap vars.JinjaVariant::JinjaVariant()
 JinjaVariant::StrVariant(@vars("name"), "World")
 
-; --- Render ---
-Protected result.s = RenderFromString("Hello, {{ name }}!", vars())
+Protected result.s = JinjaEnv::RenderString(*env, "Hello, {{ name }}!", vars())
 Debug result  ; -> Hello, World!
 
-; --- Free variables ---
+JinjaEnv::FreeEnvironment(*env)
+ForEach vars()
+  JinjaVariant::FreeVariant(@vars())
+Next
+```
+
+### Low-level API (direct pipeline)
+
+If you need direct control over each pipeline stage — for example to reuse a parsed AST
+or inject a pre-built context — call the pipeline steps individually:
+
+```purebasic
+EnableExplicit
+XIncludeFile "../PureJinja.pbi"
+
+Protected *env.JinjaEnv::JinjaEnvironment = JinjaEnv::CreateEnvironment()
+
+Protected NewList tokens.JinjaToken::Token()
+JinjaLexer::Tokenize("Hello, {{ name }}!", tokens())
+
+Protected *ast.JinjaAST::ASTNode = JinjaParser::Parse(tokens())
+
+Protected NewMap vars.JinjaVariant::JinjaVariant()
+JinjaVariant::StrVariant(@vars("name"), "World")
+
+Protected result.s = JinjaRenderer::Render(*env, *ast, vars())
+If JinjaError::HasError()
+  result = "[Error] " + JinjaError::FormatError()
+  JinjaError::ClearError()
+EndIf
+
+JinjaAST::FreeAST(*ast)
+JinjaEnv::FreeEnvironment(*env)
 ForEach vars()
   JinjaVariant::FreeVariant(@vars())
 Next
 ```
 
 ### Loading Templates from the File System
+
+`JinjaEnv::RenderTemplate()` loads and renders in one call:
 
 ```purebasic
 Protected *env.JinjaEnv::JinjaEnvironment = JinjaEnv::CreateEnvironment()
@@ -490,23 +513,10 @@ JinjaEnv::SetTemplatePath(*env, "templates/")
 Protected NewMap vars.JinjaVariant::JinjaVariant()
 JinjaVariant::StrVariant(@vars("title"), "Home")
 
-JinjaError::ClearError()
-Protected source.s = JinjaEnv::LoadTemplateSource(*env, "index.html")
-
-Protected NewList tokens.JinjaToken::Token()
-JinjaLexer::Tokenize(source, tokens())
-
-Protected *ast.JinjaAST::ASTNode = JinjaParser::Parse(tokens())
-
-; Resolve inheritance if needed
-*ast = JinjaExtends::Resolve(*env, *ast)
-
-Protected result.s = JinjaRenderer::Render(*env, *ast, vars())
+Protected result.s = JinjaEnv::RenderTemplate(*env, "index.html", vars())
 Debug result
 
-JinjaAST::FreeAST(*ast)
 JinjaEnv::FreeEnvironment(*env)
-
 ForEach vars()
   JinjaVariant::FreeVariant(@vars())
 Next
@@ -587,23 +597,18 @@ JinjaEnv::SetTemplatePath(*env, "templates/")
 Protected NewMap vars.JinjaVariant::JinjaVariant()
 JinjaVariant::StrVariant(@vars("name"), "World")
 
-JinjaError::ClearError()
-Protected source.s = JinjaEnv::LoadTemplateSource(*env, "page.html")
-
-Protected NewList tokens.JinjaToken::Token()
-JinjaLexer::Tokenize(source, tokens())
-Protected *ast.JinjaAST::ASTNode = JinjaParser::Parse(tokens())
-*ast = JinjaExtends::Resolve(*env, *ast)
-
-Protected result.s = JinjaRenderer::Render(*env, *ast, vars())
+Protected result.s = JinjaEnv::RenderTemplate(*env, "page.html", vars())
 Debug result
 
-JinjaAST::FreeAST(*ast)
 JinjaEnv::FreeEnvironment(*env)
 ForEach vars()
   JinjaVariant::FreeVariant(@vars())
 Next
 ```
+
+Note: `RenderTemplate()` does not automatically resolve template inheritance. If the child
+template uses `{% extends %}`, use the low-level pipeline and call
+`JinjaExtends::Resolve(*env, *ast)` between parse and render (see Low-level API above).
 
 ---
 
@@ -781,13 +786,13 @@ The `-cl` flag compiles a console application. On Windows, omit `./` and add `.e
 ### Expected Output
 
 ```
-=== PureJinja Test Suite v0.1.0 ===
+=== PureJinja Test Suite v0.8.0 ===
 
 [PASS] NullVariant type
 [PASS] BoolVariant true
 ...
 === Results ===
-Passed: 38/38
+Passed: N/N
 ALL TESTS PASSED
 ```
 
@@ -861,3 +866,13 @@ JinjaX reference implementation.
 
 **v0.6** — Phase 0–5 complete. 5,057 lines across 17 files. All 38 variant unit tests
 pass. Compilation clean with PureBasic 6.30 on macOS.
+
+**v0.7** — Comprehensive test suite added. Unit tests expanded across all modules
+(lexer, parser, renderer, filters, inheritance, environment).
+
+**v0.8** — `JinjaEnv::RenderString()` and `RenderTemplate()` fixed to complete the
+end-to-end rendering pipeline. The circular dependency between `Environment.pbi` and
+`Renderer.pbi` is resolved via a runtime callback: `Renderer.pbi` calls
+`JinjaEnv::RegisterRenderer(@Render())` at load time, allowing `RenderString()` to
+invoke the renderer without a compile-time circular include. Acceptance tests added
+against real HTML templates.

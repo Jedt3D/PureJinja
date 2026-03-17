@@ -57,6 +57,7 @@ XIncludeFile "TestParser.pbi"
 XIncludeFile "TestRenderer.pbi"
 XIncludeFile "TestFilters.pbi"
 XIncludeFile "TestIntegration.pbi"
+XIncludeFile "TestAcceptance.pbi"
 
 ; --- Main ---
 OpenConsole()
@@ -69,6 +70,7 @@ RunParserTests()
 RunRendererTests()
 RunFilterTests()
 RunIntegrationTests()
+RunAcceptanceTests()
 
 PrintN("=== Results ===")
 PrintN("Passed: " + Str(gTestsPassed) + "/" + Str(gTestsTotal))
