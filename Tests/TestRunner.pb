@@ -58,6 +58,8 @@ XIncludeFile "TestRenderer.pbi"
 XIncludeFile "TestFilters.pbi"
 XIncludeFile "TestIntegration.pbi"
 XIncludeFile "TestAcceptance.pbi"
+XIncludeFile "TestInheritance.pbi"
+XIncludeFile "TestRealWorld.pbi"
 
 ; --- Main ---
 OpenConsole()
@@ -71,6 +73,8 @@ RunRendererTests()
 RunFilterTests()
 RunIntegrationTests()
 RunAcceptanceTests()
+RunInheritanceTests()
+RunRealWorldTests()
 
 PrintN("=== Results ===")
 PrintN("Passed: " + Str(gTestsPassed) + "/" + Str(gTestsTotal))

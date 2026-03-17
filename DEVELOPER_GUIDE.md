@@ -876,3 +876,10 @@ end-to-end rendering pipeline. The circular dependency between `Environment.pbi`
 `JinjaEnv::RegisterRenderer(@Render())` at load time, allowing `RenderString()` to
 invoke the renderer without a compile-time circular include. Acceptance tests added
 against real HTML templates.
+
+**v0.9** — Full acceptance test coverage for all 55 templates. Inheritance tests
+(43 tests) validate extends/block for single-level, multi-block, variables-in-blocks,
+3-level grandchild chains, and logic-in-blocks. Include tests verify partial loading
+via DictLoader. Real-world tests cover product lists, user profiles, email templates,
+table reports with loop.index, navigation with active-URL comparison, and error pages
+with default() filters. Total: 466/466 tests passing, 7,976 lines compiled.
