@@ -60,6 +60,8 @@ XIncludeFile "TestIntegration.pbi"
 XIncludeFile "TestAcceptance.pbi"
 XIncludeFile "TestInheritance.pbi"
 XIncludeFile "TestRealWorld.pbi"
+XIncludeFile "TestWhitespace.pbi"
+XIncludeFile "TestRaw.pbi"
 
 ; --- Main ---
 OpenConsole()
@@ -75,6 +77,8 @@ RunIntegrationTests()
 RunAcceptanceTests()
 RunInheritanceTests()
 RunRealWorldTests()
+RunWhitespaceTests()
+RunRawTests()
 
 PrintN("=== Results ===")
 PrintN("Passed: " + Str(gTestsPassed) + "/" + Str(gTestsTotal))

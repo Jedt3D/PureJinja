@@ -11,6 +11,8 @@ DeclareModule JinjaToken
     Value.s           ; Token value (text content, operator symbol, etc.)
     LineNumber.i      ; Source line number (1-based)
     ColumnNumber.i    ; Source column number (1-based)
+    LStripPrev.i      ; If #True, strip trailing whitespace from the previous TK_Data token
+    RStripNext.i      ; If #True, strip leading whitespace from the next TK_Data token
   EndStructure
 
   ; --- Token name for debugging ---

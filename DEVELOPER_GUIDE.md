@@ -883,3 +883,19 @@ against real HTML templates.
 via DictLoader. Real-world tests cover product lists, user profiles, email templates,
 table reports with loop.index, navigation with active-URL comparison, and error pages
 with default() filters. Total: 466/466 tests passing, 7,976 lines compiled.
+
+**v1.0** — Three major features added:
+
+1. **Auto-resolve inheritance**: `RenderString()` and `RenderTemplate()` now auto-detect
+   `{% extends %}` and resolve inheritance before rendering (no manual
+   `JinjaExtends::Resolve()` needed). Uses same runtime callback pattern as renderer.
+
+2. **Whitespace control**: Strip markers `{%-`, `-%}`, `{{-`, `-}}`, `{#-`, `-#}` remove
+   adjacent whitespace from text nodes. Handled entirely in the Lexer via a post-processing
+   pass that strips leading/trailing whitespace from TK_Data tokens.
+
+3. **Raw blocks**: `{% raw %}...{% endraw %}` outputs content literally without Jinja
+   processing. Handled in the Lexer — content between raw/endraw becomes a single TK_Data
+   token. No Parser or Renderer changes needed.
+
+Total: 497/497 tests passing, 8,583 lines compiled, 27 source files.
