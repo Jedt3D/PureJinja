@@ -100,7 +100,7 @@ DeclareModule Jinja
   EndEnumeration
 
   ; --- Engine Constants ---
-  #JINJA_VERSION$ = "1.1.0"
+  #JINJA_VERSION$ = "1.2.0"
   #JINJA_MAX_RECURSION = 100
 
 EndDeclareModule

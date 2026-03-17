@@ -22,6 +22,14 @@ Module JinjaRenderer
   Declare.s RenderNode(*env.JinjaEnv::JinjaEnvironment, *ctx.JinjaContext::JinjaContext, *node.JinjaAST::ASTNode)
   Declare EvaluateExpression(*env.JinjaEnv::JinjaEnvironment, *ctx.JinjaContext::JinjaContext, *node.JinjaAST::ASTNode, *result.JinjaVariant::JinjaVariant)
 
+  ; --- Global state for joiner() and cycler() callables ---
+  ; Joiner: maps unique string ID -> "1" (first call pending) or "0" (already called)
+  Global NewMap gJoinerState.s()
+  Global gJoinerCounter.i = 0
+  ; Cycler: maps unique string ID -> current index (integer)
+  Global NewMap gCyclerIndex.i()
+  Global gCyclerCounter.i = 0
+
   ; ===== Render Helpers =====
 
   Procedure.s RenderNodeList(*env.JinjaEnv::JinjaEnvironment, *ctx.JinjaContext::JinjaContext, *node.JinjaAST::ASTNode)
@@ -502,6 +510,11 @@ Module JinjaRenderer
 
     ; Built-in functions
     Select LCase(funcName)
+      Case "namespace"
+        ; namespace() creates a mutable map that persists across scopes.
+        ; Arguments are ignored in this implementation (empty namespace).
+        JinjaVariant::NewMapVariant(*result)
+
       Case "range"
         ; range(stop) or range(start, stop) or range(start, stop, step)
         Protected rangeStart.i = 0
@@ -558,7 +571,127 @@ Module JinjaRenderer
           Wend
         EndIf
 
+      Case "dict"
+        ; dict() with no args creates an empty dictionary.
+        ; (Keyword-argument form is not supported; use dict literals {"k": v} instead.)
+        JinjaVariant::NewMapVariant(*result)
+
+      Case "joiner"
+        ; joiner(sep=", ") — returns a callable separator object.
+        ; First call returns ""; subsequent calls return sep.
+        ; Usage: {% set j = joiner(", ") %}{% for x in items %}{{ j() }}{{ x }}{% endfor %}
+        Protected joinerSep.s = ", "
+        If *node\Args
+          Protected joinerSepV.JinjaVariant::JinjaVariant
+          EvaluateExpression(*env, *ctx, *node\Args, @joinerSepV)
+          joinerSep = JinjaVariant::ToString(@joinerSepV)
+          JinjaVariant::FreeVariant(@joinerSepV)
+        EndIf
+        ; Generate a unique ID for this joiner instance
+        gJoinerCounter + 1
+        Protected joinerId.s = "__joiner__" + Str(gJoinerCounter)
+        ; Register state: "1" means "first call not yet made"
+        gJoinerState(joinerId) = "1"
+        ; Build the joiner map variant (holds ID and sep so EvaluateCall can find them)
+        JinjaVariant::NewMapVariant(*result)
+        Protected joinerIdV.JinjaVariant::JinjaVariant
+        Protected joinerSepV2.JinjaVariant::JinjaVariant
+        JinjaVariant::StrVariant(@joinerIdV, joinerId)
+        JinjaVariant::VMapSet(*result, "_joiner_id", @joinerIdV)
+        JinjaVariant::FreeVariant(@joinerIdV)
+        JinjaVariant::StrVariant(@joinerSepV2, joinerSep)
+        JinjaVariant::VMapSet(*result, "_joiner_sep", @joinerSepV2)
+        JinjaVariant::FreeVariant(@joinerSepV2)
+
+      Case "cycler"
+        ; cycler(item1, item2, ...) — returns a callable that cycles through items.
+        ; Usage: {% set c = cycler("odd", "even") %}{{ c() }}{{ c() }}
+        ; Generate a unique ID for this cycler instance
+        gCyclerCounter + 1
+        Protected cyclerId.s = "__cycler__" + Str(gCyclerCounter)
+        gCyclerIndex(cyclerId) = 0
+        ; Build cycler map variant with ID and items (as a list)
+        JinjaVariant::NewMapVariant(*result)
+        Protected cyclerIdV.JinjaVariant::JinjaVariant
+        JinjaVariant::StrVariant(@cyclerIdV, cyclerId)
+        JinjaVariant::VMapSet(*result, "_cycler_id", @cyclerIdV)
+        JinjaVariant::FreeVariant(@cyclerIdV)
+        ; Store items as a list in the map
+        Protected cyclerItemsV.JinjaVariant::JinjaVariant
+        JinjaVariant::NewListVariant(@cyclerItemsV)
+        Protected *cArg.JinjaAST::ASTNode = *node\Args
+        While *cArg
+          Protected cItemV.JinjaVariant::JinjaVariant
+          EvaluateExpression(*env, *ctx, *cArg, @cItemV)
+          JinjaVariant::VListAdd(@cyclerItemsV, @cItemV)
+          JinjaVariant::FreeVariant(@cItemV)
+          *cArg = *cArg\Next
+        Wend
+        JinjaVariant::VMapSet(*result, "_cycler_items", @cyclerItemsV)
+        JinjaVariant::FreeVariant(@cyclerItemsV)
+
       Default
+        ; Not a built-in function — check if funcName is a callable variable
+        ; (joiner or cycler object stored in context)
+        Protected callableV.JinjaVariant::JinjaVariant
+        JinjaContext::GetVariable(*ctx, funcName, @callableV)
+        If callableV\VType = Jinja::#VT_Map
+          ; Check for joiner: map has "_joiner_id" key
+          Protected joinerIdKeyV.JinjaVariant::JinjaVariant
+          If JinjaVariant::VMapGet(@callableV, "_joiner_id", @joinerIdKeyV)
+            Protected joinerIdKey.s = JinjaVariant::ToString(@joinerIdKeyV)
+            JinjaVariant::FreeVariant(@joinerIdKeyV)
+            If FindMapElement(gJoinerState(), joinerIdKey)
+              If gJoinerState() = "1"
+                ; First call: return empty string, flip state
+                gJoinerState() = "0"
+                JinjaVariant::StrVariant(*result, "")
+              Else
+                ; Subsequent calls: return the separator
+                Protected joinerSepKeyV.JinjaVariant::JinjaVariant
+                JinjaVariant::VMapGet(@callableV, "_joiner_sep", @joinerSepKeyV)
+                JinjaVariant::CopyVariant(*result, @joinerSepKeyV)
+                JinjaVariant::FreeVariant(@joinerSepKeyV)
+              EndIf
+            Else
+              JinjaVariant::StrVariant(*result, "")
+            EndIf
+            JinjaVariant::FreeVariant(@callableV)
+            ProcedureReturn
+          EndIf
+          JinjaVariant::FreeVariant(@joinerIdKeyV)
+
+          ; Check for cycler: map has "_cycler_id" key
+          Protected cyclerIdKeyV.JinjaVariant::JinjaVariant
+          If JinjaVariant::VMapGet(@callableV, "_cycler_id", @cyclerIdKeyV)
+            Protected cyclerIdKey.s = JinjaVariant::ToString(@cyclerIdKeyV)
+            JinjaVariant::FreeVariant(@cyclerIdKeyV)
+            If FindMapElement(gCyclerIndex(), cyclerIdKey)
+              Protected curIdx.i = gCyclerIndex()
+              ; Get the items list from the map
+              Protected cyclerItemsKeyV.JinjaVariant::JinjaVariant
+              JinjaVariant::VMapGet(@callableV, "_cycler_items", @cyclerItemsKeyV)
+              Protected cyclerCount.i = JinjaVariant::VListSize(@cyclerItemsKeyV)
+              If cyclerCount > 0
+                Protected cyclerItemOut.JinjaVariant::JinjaVariant
+                JinjaVariant::VListGet(@cyclerItemsKeyV, curIdx % cyclerCount, @cyclerItemOut)
+                JinjaVariant::CopyVariant(*result, @cyclerItemOut)
+                JinjaVariant::FreeVariant(@cyclerItemOut)
+                ; Advance the index
+                gCyclerIndex() = (curIdx + 1) % cyclerCount
+              Else
+                JinjaVariant::StrVariant(*result, "")
+              EndIf
+              JinjaVariant::FreeVariant(@cyclerItemsKeyV)
+            Else
+              JinjaVariant::StrVariant(*result, "")
+            EndIf
+            JinjaVariant::FreeVariant(@callableV)
+            ProcedureReturn
+          EndIf
+          JinjaVariant::FreeVariant(@cyclerIdKeyV)
+        EndIf
+        JinjaVariant::FreeVariant(@callableV)
         ; Unknown function - return null
         JinjaVariant::NullVariant(*result)
     EndSelect
@@ -776,7 +909,17 @@ Module JinjaRenderer
     Protected valueV.JinjaVariant::JinjaVariant
     EvaluateExpression(*env, *ctx, *node\Left, @valueV)
     If Not JinjaError::HasError()
-      JinjaContext::SetVariable(*ctx, *node\StringVal, @valueV)
+      ; Check for dot-assignment: ns.attr = value
+      Protected dotPos.i = FindString(*node\StringVal, ".")
+      If dotPos > 0
+        Protected objName.s = Left(*node\StringVal, dotPos - 1)
+        Protected attrName.s = Mid(*node\StringVal, dotPos + 1)
+        If Not JinjaContext::SetVariableMapEntry(*ctx, objName, attrName, @valueV)
+          JinjaError::SetError(Jinja::#ERR_Type, "Cannot set attribute '" + attrName + "' on non-map variable '" + objName + "'")
+        EndIf
+      Else
+        JinjaContext::SetVariable(*ctx, *node\StringVal, @valueV)
+      EndIf
     EndIf
     JinjaVariant::FreeVariant(@valueV)
     ProcedureReturn ""

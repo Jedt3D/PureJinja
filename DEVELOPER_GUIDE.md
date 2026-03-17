@@ -912,3 +912,18 @@ Total: 497/497 tests passing, 8,583 lines compiled, 27 source files.
    Also added `VMapKeys()` to Variant API for map key iteration.
 
 Total: 563/563 tests passing, 9,689 lines compiled, 30 source files.
+
+**v1.2** — namespace(), global functions, dot-assignment:
+
+1. **`namespace()`**: Creates a mutable map that persists across scopes (for loops,
+   if blocks). Solves the common Jinja2 scoping problem. Uses `SetVariableMapEntry()`
+   in Context.pbi to modify maps in-place without deep-copy interference.
+
+2. **Dot-assignment `{% set ns.attr = value %}`**: Parser detects dot-notation in set
+   statements, Renderer splits "ns.attr" and modifies the map attribute in-place.
+
+3. **Global functions**: `dict()` creates empty dict, `joiner(sep)` outputs separator
+   between iterations (skips first call), `cycler(items...)` cycles through values.
+   joiner/cycler use global state maps to track call history.
+
+Total: 586/586 tests passing, 10,100 lines compiled, 32 source files.

@@ -31,6 +31,12 @@ DeclareModule JinjaContext
   ; --- Initialize context from a variable map ---
   Declare InitFromMap(*ctx.JinjaContext, Map variables.JinjaVariant::JinjaVariant())
 
+  ; --- Set a map entry on an existing map variable (for {% set ns.attr = value %}) ---
+  ; Finds the variable named 'varName' in the scope chain, and if it is a Map,
+  ; sets the key 'attrKey' to *value directly on the original map (no copy issues).
+  ; Returns #True on success, #False if the variable was not found or not a Map.
+  Declare.i SetVariableMapEntry(*ctx.JinjaContext, varName.s, attrKey.s, *value.JinjaVariant::JinjaVariant)
+
 EndDeclareModule
 
 Module JinjaContext
@@ -143,6 +149,31 @@ Module JinjaContext
         SetGlobalVariable(*ctx, MapKey(variables()), @variables())
       Next
     EndIf
+  EndProcedure
+
+  Procedure.i SetVariableMapEntry(*ctx.JinjaContext, varName.s, attrKey.s, *value.JinjaVariant::JinjaVariant)
+    ; Find the variable in the scope chain (innermost first) and modify its map in-place.
+    ; This avoids the deep-copy issue: we operate directly on the stored variant's MapPtr.
+    If *ctx = #Null Or *value = #Null
+      ProcedureReturn #False
+    EndIf
+
+    LastElement(*ctx\Scopes())
+    Repeat
+      If FindMapElement(*ctx\Scopes()\Variables(), varName)
+        ; Found the variable — check it is a Map
+        If *ctx\Scopes()\Variables()\VType = Jinja::#VT_Map
+          ; Set the entry directly on the original map wrapper (no copy!)
+          JinjaVariant::VMapSet(@*ctx\Scopes()\Variables(), attrKey, *value)
+          ProcedureReturn #True
+        Else
+          ; Variable exists but is not a map
+          ProcedureReturn #False
+        EndIf
+      EndIf
+    Until Not PreviousElement(*ctx\Scopes())
+
+    ProcedureReturn #False
   EndProcedure
 
 EndModule

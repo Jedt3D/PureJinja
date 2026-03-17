@@ -356,6 +356,19 @@ Module JinjaParser
     Protected varName.s = CurrentValue()
     Advance()
 
+    ; Check for dot-assignment: {% set ns.attr = value %}
+    If CurrentType() = Jinja::#TK_Dot
+      Advance() ; skip the dot
+      If CurrentType() <> Jinja::#TK_Name
+        JinjaError::SetError(Jinja::#ERR_Syntax, "Expected attribute name after '.' in set statement", CurrentLine())
+        ProcedureReturn #Null
+      EndIf
+      Protected attrName.s = CurrentValue()
+      Advance()
+      ; Store the combined name as "varName.attrName" in the Set node's StringVal
+      varName = varName + "." + attrName
+    EndIf
+
     Expect(Jinja::#TK_Assign)
     If JinjaError::HasError() : ProcedureReturn #Null : EndIf
 

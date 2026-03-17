@@ -64,6 +64,8 @@ XIncludeFile "TestWhitespace.pbi"
 XIncludeFile "TestRaw.pbi"
 XIncludeFile "TestDict.pbi"
 XIncludeFile "TestNewFilters.pbi"
+XIncludeFile "TestNamespace.pbi"
+XIncludeFile "TestGlobalFuncs.pbi"
 
 ; --- Main ---
 OpenConsole()
@@ -83,6 +85,8 @@ RunWhitespaceTests()
 RunRawTests()
 RunDictTests()
 RunNewFilterTests()
+RunNamespaceTests()
+RunGlobalFuncTests()
 
 PrintN("=== Results ===")
 PrintN("Passed: " + Str(gTestsPassed) + "/" + Str(gTestsTotal))
