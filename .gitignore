@@ -1,0 +1,42 @@
+# PureBasic compiled outputs
+*.exe
+*.dll
+*.dylib
+*.so
+*.app
+*.o
+*.obj
+
+# PureBasic IDE files
+*.pbp.cfg
+*.pb.cfg
+
+# PureBasic debugger
+*.pdb
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Build output directory
+build/
+out/
+bin/
+
+# Temporary files
+*.tmp
+*.bak
+*.log
