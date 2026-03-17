@@ -14,6 +14,10 @@ DeclareModule JinjaEnv
   ; Called by RenderString/RenderTemplate to invoke the Renderer module
   Prototype.s ProtoRenderCallback(*env, *ast.JinjaAST::ASTNode, Map variables.JinjaVariant::JinjaVariant())
 
+  ; --- ExtendsResolver callback prototype ---
+  ; Called to resolve template inheritance before rendering
+  Prototype.i ProtoResolveCallback(*env, *ast.JinjaAST::ASTNode)
+
   ; --- Environment Structure ---
   Structure JinjaEnvironment
     Autoescape.i                       ; #True to auto-escape HTML output
@@ -34,8 +38,9 @@ DeclareModule JinjaEnv
   Declare SetLoader(*env.JinjaEnvironment, *loader.JinjaLoader::TemplateLoader)
   Declare SetTemplatePath(*env.JinjaEnvironment, path.s)
 
-  ; --- Renderer Registration (called by Renderer.pbi on load) ---
+  ; --- Runtime Registration (called by Renderer.pbi and ExtendsResolver.pbi on load) ---
   Declare RegisterRenderer(*renderProc)
+  Declare RegisterResolver(*resolveProc)
 
   ; --- Template Operations ---
   Declare.s RenderString(*env.JinjaEnvironment, templateStr.s, Map variables.JinjaVariant::JinjaVariant())
@@ -46,11 +51,16 @@ EndDeclareModule
 
 Module JinjaEnv
 
-  ; --- Runtime callback for Renderer (set by RegisterRenderer) ---
+  ; --- Runtime callbacks (set by RegisterRenderer/RegisterResolver) ---
   Global gRenderCallback.i = #Null
+  Global gResolveCallback.i = #Null
 
   Procedure RegisterRenderer(*renderProc)
     gRenderCallback = *renderProc
+  EndProcedure
+
+  Procedure RegisterResolver(*resolveProc)
+    gResolveCallback = *resolveProc
   EndProcedure
 
   Procedure.i CreateEnvironment()
@@ -140,6 +150,21 @@ Module JinjaEnv
     Protected *ast.JinjaAST::ASTNode = JinjaParser::Parse(tokens())
     If JinjaError::HasError()
       ProcedureReturn "[Error] " + JinjaError::FormatError()
+    EndIf
+
+    ; Resolve inheritance (if extends is present and resolver is registered)
+    If gResolveCallback And *env\Loader
+      Protected resolveProc.ProtoResolveCallback = gResolveCallback
+      Protected *resolved.JinjaAST::ASTNode = resolveProc(*env, *ast)
+      If *resolved <> *ast
+        ; Resolve returned a new merged AST — free original, use resolved
+        JinjaAST::FreeAST(*ast)
+        *ast = *resolved
+      EndIf
+      If JinjaError::HasError()
+        JinjaAST::FreeAST(*ast)
+        ProcedureReturn "[Error] " + JinjaError::FormatError()
+      EndIf
     EndIf
 
     ; Render via callback to JinjaRenderer::Render

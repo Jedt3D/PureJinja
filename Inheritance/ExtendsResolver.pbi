@@ -164,4 +164,7 @@ Module JinjaExtends
     ProcedureReturn *mergedRoot
   EndProcedure
 
+  ; --- Auto-register with Environment (resolves circular dependency) ---
+  JinjaEnv::RegisterResolver(@Resolve())
+
 EndModule

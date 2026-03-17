@@ -363,5 +363,23 @@ Procedure RunIntegrationTests()
 
   JinjaEnv::FreeEnvironment(*apiEnv)
 
+  ; =========================================================
+  ; Test 18: RenderTemplate auto-resolves inheritance
+  ; =========================================================
+  Protected *inhEnv.JinjaEnv::JinjaEnvironment = JinjaEnv::CreateEnvironment()
+  *inhEnv\Autoescape = #False
+  Protected *loader.JinjaLoader::TemplateLoader = JinjaLoader::CreateDictLoader()
+  JinjaLoader::DictLoaderAdd(*loader, "base.html", "Title: {% block title %}Default{% endblock %} Body: {% block body %}Default Body{% endblock %}")
+  JinjaLoader::DictLoaderAdd(*loader, "child.html", "{% extends " + Chr(34) + "base.html" + Chr(34) + " %}{% block title %}Child Title{% endblock %}{% block body %}Child Body{% endblock %}")
+  JinjaEnv::SetLoader(*inhEnv, *loader)
+
+  Protected NewMap inhVars.JinjaVariant::JinjaVariant()
+  Protected inhResult.s = JinjaEnv::RenderTemplate(*inhEnv, "child.html", inhVars())
+  AssertTrue(Bool(FindString(inhResult, "Child Title") > 0), "Integration: RenderTemplate auto-resolves extends (title)")
+  AssertTrue(Bool(FindString(inhResult, "Child Body") > 0), "Integration: RenderTemplate auto-resolves extends (body)")
+  AssertFalse(Bool(FindString(inhResult, "Default Body") > 0), "Integration: RenderTemplate parent defaults overridden")
+
+  JinjaEnv::FreeEnvironment(*inhEnv)
+
   PrintN("")
 EndProcedure
