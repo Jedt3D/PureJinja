@@ -40,6 +40,14 @@ DeclareModule JinjaFilters
   Declare FilterWordcount(*value.JinjaVariant::JinjaVariant, *args.JinjaVariant::JinjaVariant, argCount.i, *result.JinjaVariant::JinjaVariant)
   Declare FilterTruncate(*value.JinjaVariant::JinjaVariant, *args.JinjaVariant::JinjaVariant, argCount.i, *result.JinjaVariant::JinjaVariant)
   Declare FilterStriptags(*value.JinjaVariant::JinjaVariant, *args.JinjaVariant::JinjaVariant, argCount.i, *result.JinjaVariant::JinjaVariant)
+  Declare FilterIndent(*value.JinjaVariant::JinjaVariant, *args.JinjaVariant::JinjaVariant, argCount.i, *result.JinjaVariant::JinjaVariant)
+  Declare FilterWordwrap(*value.JinjaVariant::JinjaVariant, *args.JinjaVariant::JinjaVariant, argCount.i, *result.JinjaVariant::JinjaVariant)
+  Declare FilterCenter(*value.JinjaVariant::JinjaVariant, *args.JinjaVariant::JinjaVariant, argCount.i, *result.JinjaVariant::JinjaVariant)
+  Declare FilterUrlencode(*value.JinjaVariant::JinjaVariant, *args.JinjaVariant::JinjaVariant, argCount.i, *result.JinjaVariant::JinjaVariant)
+  Declare FilterTojson(*value.JinjaVariant::JinjaVariant, *args.JinjaVariant::JinjaVariant, argCount.i, *result.JinjaVariant::JinjaVariant)
+  Declare FilterUnique(*value.JinjaVariant::JinjaVariant, *args.JinjaVariant::JinjaVariant, argCount.i, *result.JinjaVariant::JinjaVariant)
+  Declare FilterMap(*value.JinjaVariant::JinjaVariant, *args.JinjaVariant::JinjaVariant, argCount.i, *result.JinjaVariant::JinjaVariant)
+  Declare FilterItems(*value.JinjaVariant::JinjaVariant, *args.JinjaVariant::JinjaVariant, argCount.i, *result.JinjaVariant::JinjaVariant)
 
 EndDeclareModule
 
@@ -112,6 +120,14 @@ Module JinjaFilters
     filters("wordcount") = @FilterWordcount()
     filters("truncate") = @FilterTruncate()
     filters("striptags") = @FilterStriptags()
+    filters("indent") = @FilterIndent()
+    filters("wordwrap") = @FilterWordwrap()
+    filters("center") = @FilterCenter()
+    filters("urlencode") = @FilterUrlencode()
+    filters("tojson") = @FilterTojson()
+    filters("unique") = @FilterUnique()
+    filters("map") = @FilterMap()
+    filters("items") = @FilterItems()
   EndProcedure
 
   ; ===== Filter Implementations =====
@@ -498,6 +514,412 @@ Module JinjaFilters
     Next
 
     JinjaVariant::StrVariant(*result, output)
+  EndProcedure
+
+  Procedure FilterIndent(*value.JinjaVariant::JinjaVariant, *args.JinjaVariant::JinjaVariant, argCount.i, *result.JinjaVariant::JinjaVariant)
+    ; indent(width=4, first=False) - indent each line by width spaces
+    ; By default the first line is NOT indented (first=False)
+    Protected width.i = 4
+    Protected indentFirst.i = #False
+
+    Protected widthVar.JinjaVariant::JinjaVariant
+    If GetArg(*args, 0, argCount, @widthVar)
+      width = JinjaVariant::ToInteger(@widthVar)
+      JinjaVariant::FreeVariant(@widthVar)
+      If width < 0 : width = 0 : EndIf
+    EndIf
+
+    Protected firstVar.JinjaVariant::JinjaVariant
+    If GetArg(*args, 1, argCount, @firstVar)
+      indentFirst = JinjaVariant::IsTruthy(@firstVar)
+      JinjaVariant::FreeVariant(@firstVar)
+    EndIf
+
+    Protected pad.s = ""
+    Protected pi.i
+    For pi = 1 To width
+      pad + " "
+    Next
+
+    Protected s.s = JinjaVariant::ToString(*value)
+    Protected output.s = ""
+    Protected lineNum.i = 0
+    Protected lineStart.i = 1
+    Protected sLen.i = Len(s)
+    Protected ci.i
+    Protected ch.s
+
+    For ci = 1 To sLen
+      ch = Mid(s, ci, 1)
+      If ch = Chr(10)
+        Protected line.s = Mid(s, lineStart, ci - lineStart)
+        If lineNum = 0
+          If indentFirst
+            output + pad + line
+          Else
+            output + line
+          EndIf
+        Else
+          output + pad + line
+        EndIf
+        output + Chr(10)
+        lineNum + 1
+        lineStart = ci + 1
+      EndIf
+    Next
+
+    ; Last line (no trailing newline)
+    If lineStart <= sLen
+      Protected lastLine.s = Mid(s, lineStart)
+      If lineNum = 0
+        If indentFirst
+          output + pad + lastLine
+        Else
+          output + lastLine
+        EndIf
+      Else
+        output + pad + lastLine
+      EndIf
+    EndIf
+
+    JinjaVariant::StrVariant(*result, output)
+  EndProcedure
+
+  Procedure FilterWordwrap(*value.JinjaVariant::JinjaVariant, *args.JinjaVariant::JinjaVariant, argCount.i, *result.JinjaVariant::JinjaVariant)
+    ; wordwrap(width=79) - wrap text at word boundaries
+    Protected wrapWidth.i = 79
+    Protected widthVar.JinjaVariant::JinjaVariant
+    If GetArg(*args, 0, argCount, @widthVar)
+      wrapWidth = JinjaVariant::ToInteger(@widthVar)
+      JinjaVariant::FreeVariant(@widthVar)
+      If wrapWidth < 1 : wrapWidth = 1 : EndIf
+    EndIf
+
+    Protected s.s = JinjaVariant::ToString(*value)
+    Protected output.s = ""
+    Protected currentLine.s = ""
+    Protected sLen.i = Len(s)
+    Protected wi.i = 1
+
+    While wi <= sLen
+      ; Find next word (skip spaces first if at line start)
+      Protected wordStart.i = wi
+      While wordStart <= sLen And Mid(s, wordStart, 1) = " "
+        wordStart + 1
+      Wend
+
+      ; Find end of word
+      Protected wordEnd.i = wordStart
+      While wordEnd <= sLen And Mid(s, wordEnd, 1) <> " "
+        wordEnd + 1
+      Wend
+      wordEnd - 1
+
+      If wordStart > sLen
+        Break
+      EndIf
+
+      Protected word.s = Mid(s, wordStart, wordEnd - wordStart + 1)
+
+      If Len(currentLine) = 0
+        currentLine = word
+      ElseIf Len(currentLine) + 1 + Len(word) <= wrapWidth
+        currentLine + " " + word
+      Else
+        If output <> ""
+          output + Chr(10)
+        EndIf
+        output + currentLine
+        currentLine = word
+      EndIf
+
+      wi = wordEnd + 1
+
+      ; Skip spaces after word
+      While wi <= sLen And Mid(s, wi, 1) = " "
+        wi + 1
+      Wend
+    Wend
+
+    If Len(currentLine) > 0
+      If output <> ""
+        output + Chr(10)
+      EndIf
+      output + currentLine
+    EndIf
+
+    JinjaVariant::StrVariant(*result, output)
+  EndProcedure
+
+  Procedure FilterCenter(*value.JinjaVariant::JinjaVariant, *args.JinjaVariant::JinjaVariant, argCount.i, *result.JinjaVariant::JinjaVariant)
+    ; center(width=80) - center string in a field of given width
+    Protected fieldWidth.i = 80
+    Protected widthVar.JinjaVariant::JinjaVariant
+    If GetArg(*args, 0, argCount, @widthVar)
+      fieldWidth = JinjaVariant::ToInteger(@widthVar)
+      JinjaVariant::FreeVariant(@widthVar)
+    EndIf
+
+    Protected s.s = JinjaVariant::ToString(*value)
+    Protected sLen.i = Len(s)
+
+    If sLen >= fieldWidth
+      JinjaVariant::StrVariant(*result, s)
+      ProcedureReturn
+    EndIf
+
+    Protected totalPad.i = fieldWidth - sLen
+    Protected leftPad.i = totalPad / 2
+    Protected rightPad.i = totalPad - leftPad
+
+    Protected padL.s = ""
+    Protected padR.s = ""
+    Protected ci.i
+    For ci = 1 To leftPad
+      padL + " "
+    Next
+    For ci = 1 To rightPad
+      padR + " "
+    Next
+
+    JinjaVariant::StrVariant(*result, padL + s + padR)
+  EndProcedure
+
+  Procedure FilterUrlencode(*value.JinjaVariant::JinjaVariant, *args.JinjaVariant::JinjaVariant, argCount.i, *result.JinjaVariant::JinjaVariant)
+    ; urlencode - percent-encode non-safe characters
+    ; Safe chars: A-Z a-z 0-9 - _ . ~
+    Protected s.s = JinjaVariant::ToString(*value)
+    Protected output.s = ""
+    Protected sLen.i = Len(s)
+    Protected ui.i
+    Protected ch.s
+    Protected code.i
+    Protected hexChars.s = "0123456789ABCDEF"
+
+    For ui = 1 To sLen
+      ch = Mid(s, ui, 1)
+      code = Asc(ch)
+
+      ; Safe characters: A-Z (65-90), a-z (97-122), 0-9 (48-57), - (45), _ (95), . (46), ~ (126)
+      If (code >= 65 And code <= 90) Or
+         (code >= 97 And code <= 122) Or
+         (code >= 48 And code <= 57) Or
+         code = 45 Or code = 95 Or code = 46 Or code = 126
+        output + ch
+      Else
+        ; Encode as %XX
+        output + "%" + Mid(hexChars, (code >> 4) + 1, 1) + Mid(hexChars, (code & $0F) + 1, 1)
+      EndIf
+    Next
+
+    JinjaVariant::StrVariant(*result, output)
+  EndProcedure
+
+  ; Forward declare recursive tojson helper
+  Declare.s ToJsonString(*v.JinjaVariant::JinjaVariant)
+
+  Procedure.s ToJsonString(*v.JinjaVariant::JinjaVariant)
+    ; All locals declared at top to avoid issues inside Select/Case
+    Protected dStr.s
+    Protected raw.s
+    Protected escaped.s
+    Protected ji.i
+    Protected jch.s
+    Protected jCode.i
+    Protected listOut.s
+    Protected lCount.i
+    Protected li.i
+    Protected liV.JinjaVariant::JinjaVariant
+    Protected mapOut.s
+    Protected mFirst.i
+    Protected NewList mKeys.s()
+    Protected mValV.JinjaVariant::JinjaVariant
+
+    If *v = #Null
+      ProcedureReturn "null"
+    EndIf
+
+    Select *v\VType
+      Case Jinja::#VT_Null
+        ProcedureReturn "null"
+
+      Case Jinja::#VT_Boolean
+        If *v\IntVal
+          ProcedureReturn "true"
+        Else
+          ProcedureReturn "false"
+        EndIf
+
+      Case Jinja::#VT_Integer
+        ProcedureReturn Str(*v\IntVal)
+
+      Case Jinja::#VT_Double
+        dStr = StrD(*v\DblVal, 10)
+        ; Trim trailing zeros
+        If FindString(dStr, ".")
+          While Right(dStr, 1) = "0"
+            dStr = Left(dStr, Len(dStr) - 1)
+          Wend
+          If Right(dStr, 1) = "."
+            dStr + "0"
+          EndIf
+        EndIf
+        ProcedureReturn dStr
+
+      Case Jinja::#VT_String, Jinja::#VT_Markup
+        ; Escape special characters in JSON strings
+        raw = *v\StrVal
+        escaped = ""
+        For ji = 1 To Len(raw)
+          jch = Mid(raw, ji, 1)
+          If jch = Chr(34)        ; double-quote
+            escaped + Chr(92) + Chr(34)
+          ElseIf jch = Chr(92)    ; backslash
+            escaped + Chr(92) + Chr(92)
+          ElseIf jch = Chr(10)    ; newline
+            escaped + Chr(92) + "n"
+          ElseIf jch = Chr(13)    ; carriage return
+            escaped + Chr(92) + "r"
+          ElseIf jch = Chr(9)     ; tab
+            escaped + Chr(92) + "t"
+          Else
+            escaped + jch
+          EndIf
+        Next
+        ProcedureReturn Chr(34) + escaped + Chr(34)
+
+      Case Jinja::#VT_List
+        listOut = "["
+        lCount = JinjaVariant::VListSize(*v)
+        For li = 0 To lCount - 1
+          If li > 0 : listOut + ", " : EndIf
+          JinjaVariant::VListGet(*v, li, @liV)
+          listOut + ToJsonString(@liV)
+          JinjaVariant::FreeVariant(@liV)
+        Next
+        listOut + "]"
+        ProcedureReturn listOut
+
+      Case Jinja::#VT_Map
+        mapOut = "{"
+        mFirst = #True
+        JinjaVariant::VMapKeys(*v, mKeys())
+        ForEach mKeys()
+          If Not mFirst : mapOut + ", " : EndIf
+          mFirst = #False
+          mapOut + Chr(34) + mKeys() + Chr(34) + ": "
+          JinjaVariant::VMapGet(*v, mKeys(), @mValV)
+          mapOut + ToJsonString(@mValV)
+          JinjaVariant::FreeVariant(@mValV)
+        Next
+        mapOut + "}"
+        ProcedureReturn mapOut
+
+    EndSelect
+
+    ProcedureReturn "null"
+  EndProcedure
+
+  Procedure FilterTojson(*value.JinjaVariant::JinjaVariant, *args.JinjaVariant::JinjaVariant, argCount.i, *result.JinjaVariant::JinjaVariant)
+    JinjaVariant::StrVariant(*result, ToJsonString(*value))
+  EndProcedure
+
+  Procedure FilterUnique(*value.JinjaVariant::JinjaVariant, *args.JinjaVariant::JinjaVariant, argCount.i, *result.JinjaVariant::JinjaVariant)
+    ; unique - remove duplicate values from a list (preserves first occurrence order)
+    JinjaVariant::NewListVariant(*result)
+
+    If *value\VType = Jinja::#VT_List
+      Protected count.i = JinjaVariant::VListSize(*value)
+      Protected ui.i
+      Protected uj.i
+      Protected itemV.JinjaVariant::JinjaVariant
+      Protected checkV.JinjaVariant::JinjaVariant
+      Protected isDup.i
+
+      For ui = 0 To count - 1
+        JinjaVariant::VListGet(*value, ui, @itemV)
+        isDup = #False
+
+        ; Check if this item already appeared earlier
+        For uj = 0 To ui - 1
+          JinjaVariant::VListGet(*value, uj, @checkV)
+          If JinjaVariant::VariantsEqual(@itemV, @checkV)
+            isDup = #True
+            JinjaVariant::FreeVariant(@checkV)
+            Break
+          EndIf
+          JinjaVariant::FreeVariant(@checkV)
+        Next
+
+        If Not isDup
+          JinjaVariant::VListAdd(*result, @itemV)
+        EndIf
+        JinjaVariant::FreeVariant(@itemV)
+      Next
+    EndIf
+  EndProcedure
+
+  Procedure FilterMap(*value.JinjaVariant::JinjaVariant, *args.JinjaVariant::JinjaVariant, argCount.i, *result.JinjaVariant::JinjaVariant)
+    ; map(attribute) - extract a named attribute/key from each item in a list
+    ; For map items: uses VMapGet with the attribute name
+    ; For string items: returns the item string itself (no attribute)
+    Protected attrVar.JinjaVariant::JinjaVariant
+    Protected attr.s = ""
+    If GetArg(*args, 0, argCount, @attrVar)
+      attr = JinjaVariant::ToString(@attrVar)
+      JinjaVariant::FreeVariant(@attrVar)
+    EndIf
+
+    JinjaVariant::NewListVariant(*result)
+
+    If *value\VType = Jinja::#VT_List
+      Protected count.i = JinjaVariant::VListSize(*value)
+      Protected mi.i
+      Protected itemV.JinjaVariant::JinjaVariant
+      Protected attrV.JinjaVariant::JinjaVariant
+
+      For mi = 0 To count - 1
+        JinjaVariant::VListGet(*value, mi, @itemV)
+
+        If attr <> "" And itemV\VType = Jinja::#VT_Map
+          ; Extract named attribute from map item
+          JinjaVariant::VMapGet(@itemV, attr, @attrV)
+          JinjaVariant::VListAdd(*result, @attrV)
+          JinjaVariant::FreeVariant(@attrV)
+        Else
+          ; No attribute or non-map item - return item as-is
+          JinjaVariant::VListAdd(*result, @itemV)
+        EndIf
+
+        JinjaVariant::FreeVariant(@itemV)
+      Next
+    EndIf
+  EndProcedure
+
+  Procedure FilterItems(*value.JinjaVariant::JinjaVariant, *args.JinjaVariant::JinjaVariant, argCount.i, *result.JinjaVariant::JinjaVariant)
+    ; items - convert a map to a list of [key, value] 2-element lists
+    ; Usage: {% for pair in mydict|items %} {{ pair[0] }}: {{ pair[1] }} {% endfor %}
+    JinjaVariant::NewListVariant(*result)
+
+    If *value\VType = Jinja::#VT_Map
+      Protected NewList itemKeys.s()
+      JinjaVariant::VMapKeys(*value, itemKeys())
+      Protected pairV.JinjaVariant::JinjaVariant
+      Protected keyV.JinjaVariant::JinjaVariant
+      Protected valV.JinjaVariant::JinjaVariant
+      ForEach itemKeys()
+        ; Build a 2-element list: [key, value]
+        JinjaVariant::NewListVariant(@pairV)
+        JinjaVariant::StrVariant(@keyV, itemKeys())
+        JinjaVariant::VListAdd(@pairV, @keyV)
+        JinjaVariant::FreeVariant(@keyV)
+        JinjaVariant::VMapGet(*value, itemKeys(), @valV)
+        JinjaVariant::VListAdd(@pairV, @valV)
+        JinjaVariant::FreeVariant(@valV)
+        JinjaVariant::VListAdd(*result, @pairV)
+        JinjaVariant::FreeVariant(@pairV)
+      Next
+    EndIf
   EndProcedure
 
 EndModule

@@ -937,6 +937,25 @@ Module JinjaParser
       ProcedureReturn *listNode
     EndIf
 
+    ; Dict literal {"key": value, ...}
+    If CurrentType() = Jinja::#TK_LBrace
+      Advance()
+      Protected *dictNode.JinjaAST::ASTNode = JinjaAST::NewDictLiteralNode(lineNum)
+      While CurrentType() <> Jinja::#TK_RBrace And Not IsAtEnd()
+        Protected *dictKey.JinjaAST::ASTNode = ParseExpression()
+        If JinjaError::HasError() : ProcedureReturn *dictNode : EndIf
+        Expect(Jinja::#TK_Colon)
+        If JinjaError::HasError() : ProcedureReturn *dictNode : EndIf
+        Protected *dictVal.JinjaAST::ASTNode = ParseExpression()
+        If JinjaError::HasError() : ProcedureReturn *dictNode : EndIf
+        JinjaAST::AddArg(*dictNode, *dictKey)
+        JinjaAST::AddArg(*dictNode, *dictVal)
+        If CurrentType() = Jinja::#TK_Comma : Advance() : EndIf
+      Wend
+      Expect(Jinja::#TK_RBrace)
+      ProcedureReturn *dictNode
+    EndIf
+
     JinjaError::SetError(Jinja::#ERR_Syntax, "Unexpected token: " + JinjaToken::TokenName(CurrentType()) + " '" + CurrentValue() + "'", lineNum)
     ProcedureReturn #Null
   EndProcedure

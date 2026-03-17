@@ -73,6 +73,7 @@ DeclareModule Jinja
     #NODE_Macro            ; Macro definition
     #NODE_Call             ; Macro/function call
     #NODE_ListLiteral      ; List literal [a, b, c]
+    #NODE_DictLiteral      ; Dict literal {"key": value}
   EndEnumeration
 
   ; --- Literal Sub-Types ---
@@ -99,7 +100,7 @@ DeclareModule Jinja
   EndEnumeration
 
   ; --- Engine Constants ---
-  #JINJA_VERSION$ = "1.0.0"
+  #JINJA_VERSION$ = "1.1.0"
   #JINJA_MAX_RECURSION = 100
 
 EndDeclareModule

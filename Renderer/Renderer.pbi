@@ -436,6 +436,24 @@ Module JinjaRenderer
     Wend
   EndProcedure
 
+  Procedure EvaluateDictLiteral(*env.JinjaEnv::JinjaEnvironment, *ctx.JinjaContext::JinjaContext, *node.JinjaAST::ASTNode, *result.JinjaVariant::JinjaVariant)
+    JinjaVariant::NewMapVariant(*result)
+    Protected *argNode.JinjaAST::ASTNode = *node\Args
+    While *argNode
+      Protected keyV.JinjaVariant::JinjaVariant
+      EvaluateExpression(*env, *ctx, *argNode, @keyV)
+      Protected keyStr.s = JinjaVariant::ToString(@keyV)
+      JinjaVariant::FreeVariant(@keyV)
+      *argNode = *argNode\Next
+      If *argNode = #Null : ProcedureReturn : EndIf
+      Protected valV.JinjaVariant::JinjaVariant
+      EvaluateExpression(*env, *ctx, *argNode, @valV)
+      JinjaVariant::VMapSet(*result, keyStr, @valV)
+      JinjaVariant::FreeVariant(@valV)
+      *argNode = *argNode\Next
+    Wend
+  EndProcedure
+
   Procedure EvaluateCall(*env.JinjaEnv::JinjaEnvironment, *ctx.JinjaContext::JinjaContext, *node.JinjaAST::ASTNode, *result.JinjaVariant::JinjaVariant)
     Protected funcName.s = *node\StringVal
 
@@ -595,6 +613,9 @@ Module JinjaRenderer
 
       Case Jinja::#NODE_ListLiteral
         EvaluateListLiteral(*env, *ctx, *node, *result)
+
+      Case Jinja::#NODE_DictLiteral
+        EvaluateDictLiteral(*env, *ctx, *node, *result)
 
       Case Jinja::#NODE_Call
         EvaluateCall(*env, *ctx, *node, *result)

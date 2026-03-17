@@ -899,3 +899,16 @@ with default() filters. Total: 466/466 tests passing, 7,976 lines compiled.
    token. No Parser or Renderer changes needed.
 
 Total: 497/497 tests passing, 8,583 lines compiled, 27 source files.
+
+**v1.1** — Dict literals and 8 new filters:
+
+1. **Dict literals**: `{"key": "value", "key2": expr}` now supported. Changes across
+   Lexer (`{`/`}` token emission), Parser (dict parsing in `ParsePrimaryExpression`),
+   and Renderer (`EvaluateDictLiteral`). Supports nested dicts, variable values, dot/bracket
+   access, trailing commas, and empty dicts.
+
+2. **8 new filters** (35 total): `indent(width)`, `wordwrap(width)`, `center(width)`,
+   `urlencode`, `tojson`, `unique`, `map(attribute)`, `items` (dict to key-value list).
+   Also added `VMapKeys()` to Variant API for map key iteration.
+
+Total: 563/563 tests passing, 9,689 lines compiled, 30 source files.

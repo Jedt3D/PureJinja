@@ -62,6 +62,8 @@ XIncludeFile "TestInheritance.pbi"
 XIncludeFile "TestRealWorld.pbi"
 XIncludeFile "TestWhitespace.pbi"
 XIncludeFile "TestRaw.pbi"
+XIncludeFile "TestDict.pbi"
+XIncludeFile "TestNewFilters.pbi"
 
 ; --- Main ---
 OpenConsole()
@@ -79,6 +81,8 @@ RunInheritanceTests()
 RunRealWorldTests()
 RunWhitespaceTests()
 RunRawTests()
+RunDictTests()
+RunNewFilterTests()
 
 PrintN("=== Results ===")
 PrintN("Passed: " + Str(gTestsPassed) + "/" + Str(gTestsTotal))

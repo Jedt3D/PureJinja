@@ -57,6 +57,7 @@ DeclareModule JinjaVariant
   Declare VMapSet(*v.JinjaVariant, key.s, *item.JinjaVariant)
   Declare.i VMapHasKey(*v.JinjaVariant, key.s)
   Declare.i VMapSize(*v.JinjaVariant)
+  Declare VMapKeys(*v.JinjaVariant, List keys.s())
 
   ; --- Type Name (for debugging) ---
   Declare.s TypeName(vtype.i)
@@ -545,6 +546,19 @@ Module JinjaVariant
     EndIf
     Protected *wrapper.VariantMapWrapper = *v\MapPtr
     ProcedureReturn MapSize(*wrapper\Entries())
+  EndProcedure
+
+  Procedure VMapKeys(*v.JinjaVariant, List keys.s())
+    ; Fill the provided list with all keys of a map variant
+    ClearList(keys())
+    If *v = #Null Or *v\VType <> Jinja::#VT_Map Or *v\MapPtr = #Null
+      ProcedureReturn
+    EndIf
+    Protected *wrapper.VariantMapWrapper = *v\MapPtr
+    ForEach *wrapper\Entries()
+      AddElement(keys())
+      keys() = MapKey(*wrapper\Entries())
+    Next
   EndProcedure
 
   ; ===== Type Name =====

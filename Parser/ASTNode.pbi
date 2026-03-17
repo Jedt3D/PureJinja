@@ -71,6 +71,7 @@ DeclareModule JinjaAST
   Declare.i NewMacroNode(macroName.s, lineNum.i = 0)
   Declare.i NewCallNode(funcName.s, lineNum.i = 0)
   Declare.i NewListLiteralNode(lineNum.i = 0)
+  Declare.i NewDictLiteralNode(lineNum.i = 0)
 
   ; --- Tree manipulation ---
   Declare AddChild(*parent.ASTNode, *child.ASTNode)
@@ -311,6 +312,10 @@ Module JinjaAST
 
   Procedure.i NewListLiteralNode(lineNum.i = 0)
     ProcedureReturn AllocNode(Jinja::#NODE_ListLiteral, lineNum)
+  EndProcedure
+
+  Procedure.i NewDictLiteralNode(lineNum.i = 0)
+    ProcedureReturn AllocNode(Jinja::#NODE_DictLiteral, lineNum)
   EndProcedure
 
   ; ===== Tree Manipulation =====

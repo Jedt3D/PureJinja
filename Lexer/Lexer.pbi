@@ -460,6 +460,12 @@ Module JinjaLexer
           Case "]"
             AddToken(tokens(), Jinja::#TK_RBracket, "]", lineNum, colNum)
             pos + 1 : colNum + 1 : Continue
+          Case "{"
+            AddToken(tokens(), Jinja::#TK_LBrace, "{", lineNum, colNum)
+            pos + 1 : colNum + 1 : Continue
+          Case "}"
+            AddToken(tokens(), Jinja::#TK_RBrace, "}", lineNum, colNum)
+            pos + 1 : colNum + 1 : Continue
           Case ","
             AddToken(tokens(), Jinja::#TK_Comma, ",", lineNum, colNum)
             pos + 1 : colNum + 1 : Continue
