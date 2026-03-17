@@ -1,7 +1,7 @@
 
 ## PureJinja -- Jinja2 Template Engine for PureBasic
 
-**Version:** 1.3.0 (Feature-complete, all tiers, 599/599 tests)
+**Version:** 1.4.0 (Feature-complete, all tiers, 599/599 tests)
 **Language:** PureBasic 6.x (procedural, cross-platform)
 **Architecture:** Lexer -> Parser -> Renderer pipeline with tagged-union Variant type system
 
@@ -22,6 +22,7 @@ This project uses pindex for AI-friendly code indexing. Before modifying code:
 - [ARCHITECTURE.md](ARCHITECTURE.md) -- Technical deep-dive into design patterns
 - [FEASIBILITY_STUDY.md](FEASIBILITY_STUDY.md) -- Original feasibility analysis (completed)
 - [CHANGELOG.md](CHANGELOG.md) -- Version history
+- [JINJA_TO_HTML_WALKTHROUGH.md](JINJA_TO_HTML_WALKTHROUGH.md) -- Code walkthrough for the CLI demo app
 
 ## Testing
 

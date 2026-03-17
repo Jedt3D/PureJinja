@@ -5,7 +5,7 @@ lexer → parser → renderer pipeline in procedural PureBasic without OOP inher
 This guide is intended for developers who want to use PureJinja in a project, extend it
 with custom filters, or contribute to the engine itself.
 
-Current version: 1.3.0 (Feature-complete — all tiers implemented, 599/599 tests passing)
+Current version: 1.4.0 (Feature-complete — all tiers implemented, 599/599 tests passing)
 
 ---
 

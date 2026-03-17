@@ -11,7 +11,7 @@ macOS, Windows, and Linux with PureBasic 6.x. The engine implements the classic
 lexer, parser, renderer pipeline and covers all three feature tiers from the
 original feasibility study.
 
-**Current version:** 1.3.0 -- 599/599 tests passing, 10,653 lines, 33 source files.
+**Current version:** 1.4.0 -- 599/599 tests passing, 34 source files.
 
 ## Quick Example
 

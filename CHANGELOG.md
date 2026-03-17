@@ -4,6 +4,17 @@ All notable changes to PureJinja are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.4.0] - 2026-03-17
+
+### Added
+- `jinja_to_html.pb` CLI application: renders all 55 demo templates to static HTML in `jinja_to_html/`.
+- Code walkthrough document (`JINJA_TO_HTML_WALKTHROUGH.md`) covering every PureJinja API pattern.
+
+### Fixed
+- Use-after-free crash in `Environment/Environment.pbi` when rendering templates that use `{% extends %}` with variables in blocks. The `RenderString()` procedure was prematurely freeing the child AST whose block-body nodes were shared (not deep-copied) by the merged AST from ExtendsResolver.
+
+**Stats:** 599/599 tests passing, 34 source files. CLI app renders 55/55 templates.
+
 ## [1.3.0] - 2026-03-17
 
 ### Added

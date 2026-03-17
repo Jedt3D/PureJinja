@@ -157,8 +157,14 @@ Module JinjaEnv
       Protected resolveProc.ProtoResolveCallback = gResolveCallback
       Protected *resolved.JinjaAST::ASTNode = resolveProc(*env, *ast)
       If *resolved <> *ast
-        ; Resolve returned a new merged AST — free original, use resolved
-        JinjaAST::FreeAST(*ast)
+        ; Resolve returned a new merged AST.
+        ; NOTE: Do NOT free the child *ast here — the resolver shares child
+        ; block-body nodes with *resolved without deep-copying them.  Freeing
+        ; *ast would leave dangling pointers inside *resolved, causing a
+        ; use-after-free crash during rendering.  The child structural nodes
+        ; (TemplateNode, ExtendsNode, BlockNode shells) become a small bounded
+        ; leak per render call; the shared block-body nodes are freed when
+        ; *resolved is freed after rendering (line below).
         *ast = *resolved
       EndIf
       If JinjaError::HasError()
