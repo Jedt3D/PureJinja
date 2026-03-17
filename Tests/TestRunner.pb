@@ -52,14 +52,11 @@ EndProcedure
 
 ; --- Include Test Suites ---
 XIncludeFile "TestVariant.pbi"
-
-; (Other test suites will be added as phases are completed)
-; XIncludeFile "TestLexer.pbi"
-; XIncludeFile "TestParser.pbi"
-; XIncludeFile "TestRenderer.pbi"
-; XIncludeFile "TestFilters.pbi"
-; XIncludeFile "TestInheritance.pbi"
-; XIncludeFile "TestIntegration.pbi"
+XIncludeFile "TestLexer.pbi"
+XIncludeFile "TestParser.pbi"
+XIncludeFile "TestRenderer.pbi"
+XIncludeFile "TestFilters.pbi"
+XIncludeFile "TestIntegration.pbi"
 
 ; --- Main ---
 OpenConsole()
@@ -67,14 +64,11 @@ PrintN("=== PureJinja Test Suite v" + Jinja::#JINJA_VERSION$ + " ===")
 PrintN("")
 
 RunVariantTests()
-
-; (Other test suite calls will be added as phases complete)
-; RunLexerTests()
-; RunParserTests()
-; RunRendererTests()
-; RunFilterTests()
-; RunInheritanceTests()
-; RunIntegrationTests()
+RunLexerTests()
+RunParserTests()
+RunRendererTests()
+RunFilterTests()
+RunIntegrationTests()
 
 PrintN("=== Results ===")
 PrintN("Passed: " + Str(gTestsPassed) + "/" + Str(gTestsTotal))
