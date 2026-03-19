@@ -1,5 +1,5 @@
 
-## PureJinja -- Jinja2 Template Engine for PureBasic
+## PureJinja -- Jinja Template Engine for PureBasic
 
 **Version:** 1.4.0 (Feature-complete, all tiers, 599/599 tests)
 **Language:** PureBasic 6.x (procedural, cross-platform)
@@ -27,7 +27,11 @@ This project uses pindex for AI-friendly code indexing. Before modifying code:
 ## Testing
 
 ```bash
+# macOS / Linux
 pbcompiler -cl Tests/TestRunner.pb -o Tests/TestRunner && ./Tests/TestRunner
+
+# Windows
+pbcompiler /cl Tests\TestRunner.pb /exe Tests\TestRunner.exe && Tests\TestRunner.exe
 ```
 
 33 source files, 16 test modules, 599 tests covering all features.

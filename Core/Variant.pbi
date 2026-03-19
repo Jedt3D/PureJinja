@@ -281,7 +281,7 @@ Module JinjaVariant
   EndProcedure
 
   Procedure.i IsTruthy(*v.JinjaVariant)
-    ; Jinja2 truthiness: None is false, 0 is false, "" is false,
+    ; Jinja truthiness: None is false, 0 is false, "" is false,
     ; empty list is false, False is false. Everything else is true.
     If *v = #Null
       ProcedureReturn #False

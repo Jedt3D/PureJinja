@@ -1,7 +1,7 @@
 ; ============================================================================
 ; PureJinja - TestAcceptance.pbi
 ; Acceptance tests derived from the 55 HTML template files in templates/
-; Each test isolates the Jinja2 feature from the template and verifies output.
+; Each test isolates the Jinja feature from the template and verifies output.
 ; Uses JinjaEnv::RenderString() public API (autoescape OFF unless noted).
 ; ============================================================================
 EnableExplicit
@@ -424,7 +424,7 @@ Procedure RunAcceptanceTests()
   AssertEqual(Acc_Render("{% set total = price * quantity %}Total: {{ total }}", vars34()), "Total: 15", "Accept 34: set_computed - set computed value")
 
   ; --- 35_set_in_scope.html: set inside if block, Jinja scoping ---
-  ; In Jinja2 / PureJinja, set inside block is visible in outer scope
+  ; In Jinja / PureJinja, set inside block is visible in outer scope
   Protected NewMap vars35.JinjaVariant::JinjaVariant()
   Protected tpl35.s = "{% set x = " + Chr(34) + "outer" + Chr(34) + " %}{% if true %}{% set x = " + Chr(34) + "inner" + Chr(34) + " %}{{ x }}{% endif %}{{ x }}"
   AssertEqual(Acc_Render(tpl35, vars35()), "innerinner", "Accept 35: set_in_scope - inner set visible outside block")

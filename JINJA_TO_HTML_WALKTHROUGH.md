@@ -8,8 +8,13 @@ markup variants, template inheritance, and includes.
 ## Build and Run
 
 ```bash
+# macOS / Linux
 pbcompiler -cl jinja_to_html.pb -o jinja_to_html_app
 ./jinja_to_html_app
+
+# Windows
+pbcompiler /cl jinja_to_html.pb /exe jinja_to_html_app.exe
+jinja_to_html_app.exe
 ```
 
 Output goes to the `jinja_to_html/` directory. Console output shows per-template status:

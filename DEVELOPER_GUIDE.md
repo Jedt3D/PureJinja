@@ -1,6 +1,6 @@
 # PureJinja Developer Guide
 
-PureJinja is a Jinja2 template engine written in PureBasic. It implements the classic
+PureJinja is a Jinja template engine written in PureBasic. It implements the classic
 lexer → parser → renderer pipeline in procedural PureBasic without OOP inheritance.
 This guide is intended for developers who want to use PureJinja in a project, extend it
 with custom filters, or contribute to the engine itself.
@@ -770,7 +770,7 @@ Supports nested dicts, variable values, trailing commas, and empty dicts `{}`. C
 
 ### Namespace and Dot-Assignment
 
-The `namespace()` function creates a mutable object that persists across scopes, solving the common Jinja2 scoping problem where variables set inside `for` loops or `if` blocks are not visible outside:
+The `namespace()` function creates a mutable object that persists across scopes, solving the common Jinja scoping problem where variables set inside `for` loops or `if` blocks are not visible outside:
 
 ```html
 {% set ns = namespace(found=false) %}
@@ -879,12 +879,16 @@ Rules:
 ### Compile and Run
 
 ```bash
-# From the pure_jinja/ directory
+# macOS / Linux
 pbcompiler -cl Tests/TestRunner.pb -o Tests/TestRunner
 ./Tests/TestRunner
+
+# Windows
+pbcompiler /cl Tests\TestRunner.pb /exe Tests\TestRunner.exe
+Tests\TestRunner.exe
 ```
 
-The `-cl` flag compiles a console application. On Windows, omit `./` and add `.exe`.
+The `-cl` (or `/cl` on Windows) flag compiles a console application.
 
 ### Expected Output
 
@@ -929,7 +933,7 @@ EndProcedure
 
 ## Known Limitations
 
-The following Jinja2 features are not yet implemented:
+The following Jinja features are not yet implemented:
 
 **`super()` in blocks** — The `ExtendsResolver` populates a `parentBlockContent` map during merging, but `{{ super() }}` calls in child blocks are not resolved to the parent's content at render time.
 
@@ -1004,7 +1008,7 @@ Total: 563/563 tests passing, 9,689 lines compiled, 30 source files.
 **v1.2** — namespace(), global functions, dot-assignment:
 
 1. **`namespace()`**: Creates a mutable map that persists across scopes (for loops,
-   if blocks). Solves the common Jinja2 scoping problem. Uses `SetVariableMapEntry()`
+   if blocks). Solves the common Jinja scoping problem. Uses `SetVariableMapEntry()`
    in Context.pbi to modify maps in-place without deep-copy interference.
 
 2. **Dot-assignment `{% set ns.attr = value %}`**: Parser detects dot-notation in set

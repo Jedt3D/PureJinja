@@ -1,8 +1,10 @@
 ; jinja_to_html.pb
 ; Renders all 55 PureJinja demo templates to static HTML files.
 ;
-; Compile: pbcompiler -cl jinja_to_html.pb -o jinja_to_html_app
-; Run:     ./jinja_to_html_app
+; Compile (macOS/Linux): pbcompiler -cl jinja_to_html.pb -o jinja_to_html_app
+; Compile (Windows):     pbcompiler /cl jinja_to_html.pb /exe jinja_to_html_app.exe
+; Run (macOS/Linux):     ./jinja_to_html_app
+; Run (Windows):         jinja_to_html_app.exe
 
 XIncludeFile "PureJinja.pbi"
 

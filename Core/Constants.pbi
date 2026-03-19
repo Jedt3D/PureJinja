@@ -1,6 +1,6 @@
 ; ============================================================================
 ; PureJinja - Constants.pbi
-; All enumerations and constants for the Jinja2 template engine
+; All enumerations and constants for the Jinja template engine
 ; ============================================================================
 EnableExplicit
 

@@ -1,7 +1,7 @@
 # PureJinja Architecture
 
 This document is a technical deep-dive into the design and implementation of PureJinja,
-a Jinja2 template engine written in PureBasic.
+a Jinja template engine written in PureBasic.
 
 ---
 
@@ -108,7 +108,7 @@ function to return an error code.
 `PopScope()` manage for-loop iterations and macro calls.
 
 The `namespace()` built-in creates a Map variant that can be modified in-place across scope
-boundaries via `SetVariableMapEntry()`. This allows Jinja2's `namespace` pattern to work
+boundaries via `SetVariableMapEntry()`. This allows Jinja's `namespace` pattern to work
 correctly inside for-loops where normal variable assignment would be scoped.
 
 ### 5. Runtime Callbacks (Circular Dependency Resolution)

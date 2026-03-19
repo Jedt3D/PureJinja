@@ -1,6 +1,8 @@
 ; ============================================================================
 ; PureJinja - TestRunner.pb
-; Console test application - compile with: pbcompiler -cl Tests/TestRunner.pb
+; Console test application
+; Compile (macOS/Linux): pbcompiler -cl Tests/TestRunner.pb -o Tests/TestRunner
+; Compile (Windows):     pbcompiler /cl Tests\TestRunner.pb /exe Tests\TestRunner.exe
 ; ============================================================================
 EnableExplicit
 

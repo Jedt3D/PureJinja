@@ -1,10 +1,10 @@
-# PureJinja: Jinja2 Template Engine for PureBasic
+# PureJinja: Jinja Template Engine for PureBasic
 
 ## Feasibility Study & Development Plan
 
 **Date:** 2026-03-17
 **Reference Implementation:** Xojo JinjaX (`/Users/worajedt/Xojo Projects/JinjaX/`)
-**Original Spec:** [Jinja2 Python Documentation](https://jinja.palletsprojects.com/en/stable/)
+**Original Spec:** [Jinja Python Documentation](https://jinja.palletsprojects.com/en/stable/)
 **Target:** Cross-platform PureBasic library (Windows, macOS, Linux)
 **Test Templates:** 55 HTML templates copied from Xojo JinjaX (`templates/`)
 
@@ -16,7 +16,7 @@
 
 **Verdict: HIGHLY FEASIBLE** — The Xojo implementation proves the architecture works in a compiled, non-Python language. PureBasic has all the fundamental building blocks needed (strings, maps, linked lists, file I/O, function pointers). The main engineering challenge is implementing a Variant type system and polymorphic AST node dispatch without OOP inheritance.
 
-**Estimated scope:** ~3,000–4,500 lines of PureBasic across ~15 files, delivering a practical Jinja2 subset suitable for HTML templating, config generation, and code generation use cases.
+**Estimated scope:** ~3,000–4,500 lines of PureBasic across ~15 files, delivering a practical Jinja subset suitable for HTML templating, config generation, and code generation use cases.
 
 **Deliverables:**
 1. **PureJinja Library** (`PureJinja.pbi`) — a reusable include library for any PureBasic project on any platform
@@ -55,9 +55,9 @@ Template String → Lexer → Tokens → Parser → AST → Renderer → Output 
 
 **Architecture:** ~30 classes across lexer, parser, renderer, environment, context, 20+ AST node types, loaders, filters, exceptions.
 
-### 2.2 Python Jinja2 (Full Specification)
+### 2.2 Python Jinja (Full Specification)
 
-The full Jinja2 spec is much larger:
+The full Jinja spec is much larger:
 - 40+ built-in filters
 - 20+ built-in tests
 - Global functions (range, lipsum, dict, cycler, joiner, namespace)
@@ -268,7 +268,7 @@ These Xojo components translate almost 1:1 to PureBasic:
 
 ### 3.5 What to Defer or Simplify (Pragmatic Cuts)
 
-| Python Jinja2 Feature | Recommendation |
+| Python Jinja Feature | Recommendation |
 |----------------------|----------------|
 | Sandboxing | SKIP — not relevant for compiled templates |
 | Bytecode caching | SKIP — PureBasic compiles natively |
@@ -786,7 +786,7 @@ EndProcedure
 
 ## 10. Conclusion
 
-Porting Jinja2 to PureBasic is **highly feasible**. The existing Xojo implementation proves the concept in a similar compiled language, and the classic lexer → parser → renderer pipeline is naturally procedural. PureBasic's native `Map`, `List`, and strong string support cover most needs.
+Porting Jinja to PureBasic is **highly feasible**. The existing Xojo implementation proves the concept in a similar compiled language, and the classic lexer → parser → renderer pipeline is naturally procedural. PureBasic's native `Map`, `List`, and strong string support cover most needs.
 
 The key engineering investment is the **Variant type system** (~300-400 lines) and **polymorphic AST dispatch** (~200 lines of Select/Case). Everything else is straightforward procedural translation.
 

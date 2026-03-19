@@ -1,10 +1,10 @@
 # PureJinja
 
-A Jinja2 template engine for PureBasic.
+A Jinja template engine for PureBasic.
 
 ## What is PureJinja?
 
-PureJinja is a feature-complete Jinja2 template engine ported from the Xojo
+PureJinja is a feature-complete Jinja template engine ported from the Xojo
 [JinjaX](https://github.com/) reference implementation. It is written in pure
 procedural PureBasic -- no OOP, no external dependencies -- and compiles on
 macOS, Windows, and Linux with PureBasic 6.x. The engine implements the classic
@@ -112,9 +112,13 @@ pure_jinja/
 ## Running Tests
 
 ```bash
-# From the pure_jinja/ directory
+# macOS / Linux
 pbcompiler -cl Tests/TestRunner.pb -o Tests/TestRunner
 ./Tests/TestRunner
+
+# Windows
+pbcompiler /cl Tests\TestRunner.pb /exe Tests\TestRunner.exe
+Tests\TestRunner.exe
 ```
 
 Expected output:
@@ -131,7 +135,8 @@ ALL TESTS PASSED
 
 - [QUICKSTART.md](QUICKSTART.md) -- 5-minute hands-on tutorial
 - [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) -- Full API reference, architecture, and module documentation
-- [ARCHITECTURE.md](FEASIBILITY_STUDY.md) -- Original feasibility study and architecture design
+- [ARCHITECTURE.md](ARCHITECTURE.md) -- Technical deep-dive into design patterns
+- [FEASIBILITY_STUDY.md](FEASIBILITY_STUDY.md) -- Original feasibility study and development plan
 - [CHANGELOG.md](CHANGELOG.md) -- Version history
 
 ## License

@@ -1,6 +1,6 @@
 ; ============================================================================
 ; PureJinja - Filters.pbi
-; Built-in filter implementations for Jinja2 template engine
+; Built-in filter implementations for Jinja template engine
 ; Filters transform values: {{ value|filtername(args) }}
 ; ============================================================================
 EnableExplicit

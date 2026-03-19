@@ -1,6 +1,6 @@
 ; ============================================================================
 ; PureJinja - Master Include File
-; Jinja2 Template Engine for PureBasic
+; Jinja Template Engine for PureBasic
 ; Version: 1.3.0
 ;
 ; Usage: XIncludeFile "path/to/PureJinja.pbi"

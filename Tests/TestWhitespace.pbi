@@ -1,6 +1,6 @@
 ; ============================================================================
 ; PureJinja - TestWhitespace.pbi
-; Tests for Jinja2 whitespace control strip markers:
+; Tests for Jinja whitespace control strip markers:
 ;   {{- x }}  strip whitespace before variable tag
 ;   {{ x -}}  strip whitespace after variable tag
 ;   {%- ... -%}  strip whitespace before/after block tag
