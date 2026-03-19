@@ -48,6 +48,7 @@ DeclareModule JinjaFilters
   Declare FilterUnique(*value.JinjaVariant::JinjaVariant, *args.JinjaVariant::JinjaVariant, argCount.i, *result.JinjaVariant::JinjaVariant)
   Declare FilterMap(*value.JinjaVariant::JinjaVariant, *args.JinjaVariant::JinjaVariant, argCount.i, *result.JinjaVariant::JinjaVariant)
   Declare FilterItems(*value.JinjaVariant::JinjaVariant, *args.JinjaVariant::JinjaVariant, argCount.i, *result.JinjaVariant::JinjaVariant)
+  Declare FilterSplit(*value.JinjaVariant::JinjaVariant, *args.JinjaVariant::JinjaVariant, argCount.i, *result.JinjaVariant::JinjaVariant)
 
 EndDeclareModule
 
@@ -128,6 +129,7 @@ Module JinjaFilters
     filters("unique") = @FilterUnique()
     filters("map") = @FilterMap()
     filters("items") = @FilterItems()
+    filters("split") = @FilterSplit()
   EndProcedure
 
   ; ===== Filter Implementations =====
@@ -920,6 +922,28 @@ Module JinjaFilters
         JinjaVariant::FreeVariant(@pairV)
       Next
     EndIf
+  EndProcedure
+
+  Procedure FilterSplit(*value.JinjaVariant::JinjaVariant, *args.JinjaVariant::JinjaVariant, argCount.i, *result.JinjaVariant::JinjaVariant)
+    Protected s.s = JinjaVariant::ToString(*value)
+    Protected argV.JinjaVariant::JinjaVariant
+    Protected sep.s
+    If GetArg(*args, 0, argCount, @argV) And argV\VType <> JinjaVariant::#VNull
+      sep = JinjaVariant::ToString(@argV)
+    Else
+      sep = " "
+    EndIf
+    JinjaVariant::FreeVariant(@argV)
+    JinjaVariant::NewListVariant(*result)
+    Protected partVar.JinjaVariant::JinjaVariant
+    Protected count.i = CountString(s, sep) + 1
+    Protected i.i
+    For i = 1 To count
+      Protected part.s = StringField(s, i, sep)
+      JinjaVariant::StrVariant(@partVar, part)
+      JinjaVariant::VListAdd(*result, @partVar)
+      JinjaVariant::FreeVariant(@partVar)
+    Next
   EndProcedure
 
 EndModule

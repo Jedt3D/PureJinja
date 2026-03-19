@@ -390,9 +390,9 @@ Module JinjaRenderer
     ; Look up filter
     Protected filterAddr.i = JinjaEnv::GetFilter(*env, *node\StringVal)
     If filterAddr = #Null
-      ; Unknown filter - return value unchanged
-      JinjaVariant::CopyVariant(*result, @valueV)
+      JinjaError::SetError("Unknown filter: " + *node\StringVal)
       JinjaVariant::FreeVariant(@valueV)
+      JinjaVariant::NullVariant(*result)
       ProcedureReturn
     EndIf
 
