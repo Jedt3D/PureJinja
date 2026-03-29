@@ -35,3 +35,13 @@ pbcompiler /cl Tests\TestRunner.pb /exe Tests\TestRunner.exe && Tests\TestRunner
 ```
 
 33 source files, 16 test modules, 599 tests covering all features.
+
+## Cross-Platform Guidelines
+
+This project targets Windows, macOS, and Linux. Follow these rules when adding code:
+
+1. **Path separators:** Use `Jinja::#SEP` (defined in `Core/Constants.pbi`) when building file paths at runtime. Never hardcode `"/"` or `"\"` as separators.
+2. **Avoid PureBasic reserved names in constants:** Do not use names that end with PureBasic built-in constants (e.g., `#Null`, `#True`, `#False`). PB 6.30+ on Windows treats `#VT_Null` as a collision with `#Null`. Use `#VT_None` instead.
+3. **File I/O:** Always use `#PB_UTF8 | #PB_File_IgnoreEOL` when reading template files to handle line endings correctly on all platforms.
+4. **No OS-specific APIs:** Keep all code pure PureBasic. If platform-specific behavior is needed, use `CompilerIf #PB_Compiler_OS` blocks.
+5. **Testing:** Run the full test suite on Windows before merging. The `#VT_Null` collision was only caught at compile time on Windows.

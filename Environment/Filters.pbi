@@ -172,7 +172,7 @@ Module JinjaFilters
   Procedure FilterDefault(*value.JinjaVariant::JinjaVariant, *args.JinjaVariant::JinjaVariant, argCount.i, *result.JinjaVariant::JinjaVariant)
     ; Return default value if value is null or empty string
     Protected isEmpty.i = #False
-    If *value\VType = Jinja::#VT_Null
+    If *value\VType = Jinja::#VT_None
       isEmpty = #True
     ElseIf *value\VType = Jinja::#VT_String And *value\StrVal = ""
       isEmpty = #True
@@ -742,7 +742,7 @@ Module JinjaFilters
     EndIf
 
     Select *v\VType
-      Case Jinja::#VT_Null
+      Case Jinja::#VT_None
         ProcedureReturn "null"
 
       Case Jinja::#VT_Boolean
@@ -928,7 +928,7 @@ Module JinjaFilters
     Protected s.s = JinjaVariant::ToString(*value)
     Protected argV.JinjaVariant::JinjaVariant
     Protected sep.s
-    If GetArg(*args, 0, argCount, @argV) And argV\VType <> JinjaVariant::#VNull
+    If GetArg(*args, 0, argCount, @argV) And argV\VType <> Jinja::#VT_None
       sep = JinjaVariant::ToString(@argV)
     Else
       sep = " "

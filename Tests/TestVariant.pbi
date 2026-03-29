@@ -121,7 +121,7 @@ Procedure RunVariantTests()
   JinjaVariant::FreeVariant(@mapV)
 
   ; --- Test Type Names ---
-  AssertEqual(JinjaVariant::TypeName(Jinja::#VT_Null), "Null", "TypeName Null")
+  AssertEqual(JinjaVariant::TypeName(Jinja::#VT_None), "Null", "TypeName Null")
   AssertEqual(JinjaVariant::TypeName(Jinja::#VT_String), "String", "TypeName String")
   AssertEqual(JinjaVariant::TypeName(Jinja::#VT_List), "List", "TypeName List")
 

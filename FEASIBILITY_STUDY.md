@@ -97,7 +97,7 @@ Every template variable, expression result, and filter argument is dynamically t
 
 ```purebasic
 Enumeration VariantType
-  #VT_Null
+  #VT_None
   #VT_Boolean
   #VT_Integer
   #VT_Double

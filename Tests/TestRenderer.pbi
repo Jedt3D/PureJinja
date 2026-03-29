@@ -113,7 +113,7 @@ Procedure RunRendererTests()
   ; GetVariable on missing key returns Null
   Protected missingVar.JinjaVariant::JinjaVariant
   JinjaContext::GetVariable(*ctx, "notexist", @missingVar)
-  AssertEqual(Str(missingVar\VType), Str(Jinja::#VT_Null), "Context: GetVariable missing = Null type")
+  AssertEqual(Str(missingVar\VType), Str(Jinja::#VT_None), "Context: GetVariable missing = Null type")
 
   JinjaContext::FreeContext(*ctx)
 

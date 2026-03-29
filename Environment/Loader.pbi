@@ -38,7 +38,7 @@ Module JinjaLoader
       *loader\LoaderType = #LOADER_FileSystem
       ; Ensure base path ends with separator
       If basePath <> "" And Right(basePath, 1) <> "/" And Right(basePath, 1) <> "\"
-        basePath + "/"
+        basePath + Jinja::#SEP
       EndIf
       *loader\BasePath = basePath
     EndIf

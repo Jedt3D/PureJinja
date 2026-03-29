@@ -57,7 +57,7 @@ Module JinjaRenderer
 
   Procedure.s AutoEscape(*env.JinjaEnv::JinjaEnvironment, *value.JinjaVariant::JinjaVariant)
     ; Apply auto-escaping based on environment settings
-    If *value\VType = Jinja::#VT_Null
+    If *value\VType = Jinja::#VT_None
       ProcedureReturn ""
     EndIf
 
@@ -296,12 +296,12 @@ Module JinjaRenderer
 
         Select LCase(testName)
           Case "none"
-            JinjaVariant::BoolVariant(*result, Bool(leftV\VType = Jinja::#VT_Null))
+            JinjaVariant::BoolVariant(*result, Bool(leftV\VType = Jinja::#VT_None))
           Case "defined"
             ; A variable is defined if it's not null (was found in context)
-            JinjaVariant::BoolVariant(*result, Bool(leftV\VType <> Jinja::#VT_Null))
+            JinjaVariant::BoolVariant(*result, Bool(leftV\VType <> Jinja::#VT_None))
           Case "undefined"
-            JinjaVariant::BoolVariant(*result, Bool(leftV\VType = Jinja::#VT_Null))
+            JinjaVariant::BoolVariant(*result, Bool(leftV\VType = Jinja::#VT_None))
           Case "even"
             JinjaVariant::BoolVariant(*result, Bool(JinjaVariant::ToInteger(@leftV) % 2 = 0))
           Case "odd"
@@ -324,11 +324,11 @@ Module JinjaRenderer
 
         Select LCase(testName2)
           Case "none"
-            JinjaVariant::BoolVariant(*result, Bool(leftV\VType <> Jinja::#VT_Null))
+            JinjaVariant::BoolVariant(*result, Bool(leftV\VType <> Jinja::#VT_None))
           Case "defined"
-            JinjaVariant::BoolVariant(*result, Bool(leftV\VType = Jinja::#VT_Null))
+            JinjaVariant::BoolVariant(*result, Bool(leftV\VType = Jinja::#VT_None))
           Case "undefined"
-            JinjaVariant::BoolVariant(*result, Bool(leftV\VType <> Jinja::#VT_Null))
+            JinjaVariant::BoolVariant(*result, Bool(leftV\VType <> Jinja::#VT_None))
           Default
             JinjaVariant::BoolVariant(*result, #True)
         EndSelect
@@ -390,7 +390,7 @@ Module JinjaRenderer
     ; Look up filter
     Protected filterAddr.i = JinjaEnv::GetFilter(*env, *node\StringVal)
     If filterAddr = #Null
-      JinjaError::SetError("Unknown filter: " + *node\StringVal)
+      JinjaError::SetError(Jinja::#ERR_Filter, "Unknown filter: " + *node\StringVal)
       JinjaVariant::FreeVariant(@valueV)
       JinjaVariant::NullVariant(*result)
       ProcedureReturn

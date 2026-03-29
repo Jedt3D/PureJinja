@@ -9,7 +9,7 @@ DeclareModule Jinja
   ; --- Variant Types ---
   ; Represents the dynamic type of a JinjaVariant value
   Enumeration VariantType
-    #VT_Null = 0      ; No value / None
+    #VT_None = 0      ; No value / None (avoid #VT_Null — collides with PB built-in #Null on Windows)
     #VT_Boolean        ; Boolean true/false
     #VT_Integer        ; 64-bit integer
     #VT_Double         ; Double-precision float
@@ -101,8 +101,15 @@ DeclareModule Jinja
   EndEnumeration
 
   ; --- Engine Constants ---
-  #JINJA_VERSION$ = "1.3.0"
+  #JINJA_VERSION$ = "1.4.0"
   #JINJA_MAX_RECURSION = 100
+
+  ; Platform-native path separator
+  CompilerIf #PB_Compiler_OS = #PB_OS_Windows
+    #SEP = "\"
+  CompilerElse
+    #SEP = "/"
+  CompilerEndIf
 
 EndDeclareModule
 

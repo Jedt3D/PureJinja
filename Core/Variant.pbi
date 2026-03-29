@@ -80,7 +80,7 @@ Module JinjaVariant
   ; ===== Constructors =====
 
   Procedure NullVariant(*out.JinjaVariant)
-    *out\VType = Jinja::#VT_Null
+    *out\VType = Jinja::#VT_None
     *out\IntVal = 0
     *out\DblVal = 0.0
     *out\StrVal = ""
@@ -175,7 +175,7 @@ Module JinjaVariant
     EndIf
 
     Select *v\VType
-      Case Jinja::#VT_Null
+      Case Jinja::#VT_None
         ProcedureReturn ""
 
       Case Jinja::#VT_Boolean
@@ -244,7 +244,7 @@ Module JinjaVariant
     EndIf
 
     Select *v\VType
-      Case Jinja::#VT_Null
+      Case Jinja::#VT_None
         ProcedureReturn 0.0
       Case Jinja::#VT_Boolean
         ProcedureReturn *v\IntVal * 1.0
@@ -265,7 +265,7 @@ Module JinjaVariant
     EndIf
 
     Select *v\VType
-      Case Jinja::#VT_Null
+      Case Jinja::#VT_None
         ProcedureReturn 0
       Case Jinja::#VT_Boolean
         ProcedureReturn *v\IntVal
@@ -288,7 +288,7 @@ Module JinjaVariant
     EndIf
 
     Select *v\VType
-      Case Jinja::#VT_Null
+      Case Jinja::#VT_None
         ProcedureReturn #False
 
       Case Jinja::#VT_Boolean
@@ -329,12 +329,12 @@ Module JinjaVariant
 
   Procedure.i VariantsEqual(*a.JinjaVariant, *b.JinjaVariant)
     ; Both null
-    If *a\VType = Jinja::#VT_Null And *b\VType = Jinja::#VT_Null
+    If *a\VType = Jinja::#VT_None And *b\VType = Jinja::#VT_None
       ProcedureReturn #True
     EndIf
 
     ; One null, one not
-    If *a\VType = Jinja::#VT_Null Or *b\VType = Jinja::#VT_Null
+    If *a\VType = Jinja::#VT_None Or *b\VType = Jinja::#VT_None
       ProcedureReturn #False
     EndIf
 
@@ -428,7 +428,7 @@ Module JinjaVariant
       *v\MapPtr = #Null
     EndIf
 
-    *v\VType = Jinja::#VT_Null
+    *v\VType = Jinja::#VT_None
   EndProcedure
 
   Procedure FreeVariantList(*listPtr)
@@ -527,7 +527,7 @@ Module JinjaVariant
     If FindMapElement(*wrapper\Entries(), key)
       FreeVariant(@*wrapper\Entries())
     EndIf
-    *wrapper\Entries(key)\VType = Jinja::#VT_Null
+    *wrapper\Entries(key)\VType = Jinja::#VT_None
     CopyVariant(@*wrapper\Entries(key), *item)
   EndProcedure
 
@@ -565,7 +565,7 @@ Module JinjaVariant
 
   Procedure.s TypeName(vtype.i)
     Select vtype
-      Case Jinja::#VT_Null
+      Case Jinja::#VT_None
         ProcedureReturn "Null"
       Case Jinja::#VT_Boolean
         ProcedureReturn "Boolean"

@@ -116,7 +116,7 @@ Defines all enumerations. No procedures. Key enumerations:
 
 | Enumeration | Values |
 |-------------|--------|
-| `VariantType` | `#VT_Null`, `#VT_Boolean`, `#VT_Integer`, `#VT_Double`, `#VT_String`, `#VT_List`, `#VT_Map`, `#VT_Markup` |
+| `VariantType` | `#VT_None`, `#VT_Boolean`, `#VT_Integer`, `#VT_Double`, `#VT_String`, `#VT_List`, `#VT_Map`, `#VT_Markup` |
 | `TokenType` | `#TK_EOF`, `#TK_Data`, `#TK_VariableBegin`/`End`, `#TK_BlockBegin`/`End`, `#TK_Name`, `#TK_Keyword`, `#TK_String`, `#TK_Integer`, `#TK_Float`, `#TK_Operator`, `#TK_Assign`, `#TK_Pipe`, `#TK_Dot`, `#TK_Comma`, `#TK_LParen`/`RParen`, `#TK_LBracket`/`RBracket`, `#TK_Tilde` |
 | `NodeType` | `#NODE_Template`, `#NODE_Text`, `#NODE_Output`, `#NODE_Literal`, `#NODE_Variable`, `#NODE_BinaryOp`, `#NODE_UnaryOp`, `#NODE_Compare`, `#NODE_Filter`, `#NODE_GetAttr`, `#NODE_GetItem`, `#NODE_If`, `#NODE_For`, `#NODE_Set`, `#NODE_Block`, `#NODE_Extends`, `#NODE_Include`, `#NODE_Macro`, `#NODE_Call`, `#NODE_ListLiteral`, `#NODE_DictLiteral`, `#NODE_Import` |
 | `ErrorCode` | `#ERR_None`, `#ERR_Syntax`, `#ERR_Render`, `#ERR_Undefined`, `#ERR_Type`, `#ERR_Filter`, `#ERR_Loader`, `#ERR_Inheritance`, `#ERR_Internal` |
@@ -161,7 +161,7 @@ List and Map variants point to heap-allocated wrapper structures containing Pure
 
 | Procedure | Output |
 |-----------|--------|
-| `NullVariant(*out)` | `#VT_Null` |
+| `NullVariant(*out)` | `#VT_None` |
 | `BoolVariant(*out, value.i)` | `#VT_Boolean` |
 | `IntVariant(*out, value.q)` | `#VT_Integer` |
 | `DblVariant(*out, value.d)` | `#VT_Double` |
